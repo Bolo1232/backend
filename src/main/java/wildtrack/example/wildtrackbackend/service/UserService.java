@@ -16,8 +16,8 @@ public class UserService {
     private UserRepository userRepository;
 
     public boolean isEmailExists(String email) {
-        return userRepository.existsByEmail(email);
-    }
+        return userRepository.existsByEmail(email); // This must return `true` if the email exists
+    }    
 
     public void saveUser(User user) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();

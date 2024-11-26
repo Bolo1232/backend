@@ -3,12 +3,12 @@ package wildtrack.example.wildtrackbackend.securityconfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
@@ -20,10 +20,10 @@ public class SecurityConfig {
         http.csrf().disable()
             .cors().and() // Enable CORS
             .authorizeRequests()
-            .requestMatchers("/api/users/register", "/api/books/add").permitAll() // Allow unauthenticated access
+            .requestMatchers("/api/users/register", "/api/login", "/api/books/add").permitAll() // Allow unauthenticated access
             .anyRequest().authenticated()
             .and()
-            .httpBasic();
+            .httpBasic(); // Use Basic Authentication (replace or extend with JWT as needed)
         return http.build();
     }
 
@@ -41,6 +41,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(); // Use BCrypt for password encoding
     }
 }

@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,18 +25,20 @@ public class UserController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        try {
-            if (userService.isEmailExists(user.getEmail())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email already exists.");
-            }
-            userService.saveUser(user);
-            return ResponseEntity.ok("User registered successfully!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("An error occurred while registering the user.");
+public ResponseEntity<?> registerUser(@RequestBody User user) {
+    System.out.println("Received User: " + user);
+    try {
+        if (userService.isEmailExists(user.getEmail())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email already exists."));
         }
+        userService.saveUser(user);
+        return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An error occurred while registering the user."));
     }
+}
+
 
     @GetMapping("/all")
     public ResponseEntity<?> getAllUsers() {
@@ -44,7 +47,7 @@ public class UserController {
             return ResponseEntity.ok(users);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body("An error occurred while fetching users.");
+            return ResponseEntity.status(500).body(Map.of("error", "An error occurred while fetching users."));
         }
     }
 }
