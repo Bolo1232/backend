@@ -16,16 +16,25 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf().disable()
-            .cors().and() // Enable CORS
-            .authorizeRequests()
-            .requestMatchers("/api/users/register", "/api/login", "/api/books/add").permitAll() // Allow unauthenticated access
-            .anyRequest().authenticated()
-            .and()
-            .httpBasic(); // Use Basic Authentication (replace or extend with JWT as needed)
-        return http.build();
-    }
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http.csrf().disable() // Disable CSRF since you're using JWT
+        .cors().and() // Enable CORS
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(
+                "/api/users/register",  // Registration endpoint
+                "/api/login",          // Login endpoint
+                "/api/verify-token",
+                "/api/library-hours/**",
+                 "/api/books/**",
+                  "/api/users/**"    // Token verification endpoint
+            ).permitAll() // Allow unauthenticated access to these endpoints
+            .anyRequest().authenticated() // All other requests require authentication
+        )
+        .httpBasic(); // Keep Basic Authentication for now
+
+    return http.build();
+}
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

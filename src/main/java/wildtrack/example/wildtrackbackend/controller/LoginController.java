@@ -1,19 +1,15 @@
 package wildtrack.example.wildtrackbackend.controller;
 
-import java.util.Map;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import wildtrack.example.wildtrackbackend.entity.User;
 import wildtrack.example.wildtrackbackend.repository.UserRepository;
+import wildtrack.example.wildtrackbackend.service.TokenService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -25,46 +21,64 @@ public class LoginController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody User loginRequest) {
-    try {
-        Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
+    @Autowired
+    private TokenService tokenService;
 
+    // Login endpoint
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                // Return the role from the database
+
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                String token = tokenService.generateToken(email);
+
                 return ResponseEntity.ok(Map.of(
-                    "message", "Login successful",
-                    "role", user.getRole() // Fetch role dynamically
+                        "message", "Login successful",
+                        "token", token,
+                        "role", user.getRole(),
+                        "idNumber", user.getIdNumber()
                 ));
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
             }
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", "User not found"));
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of("error", "An error occurred while processing the login request"));
     }
-}
 
+    // Verify token endpoint
+    @GetMapping("/verify-token")
+    public ResponseEntity<?> verifyToken(@RequestHeader("Authorization") String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authorization header missing or invalid"));
+        }
 
-    /**
-     * A placeholder method to determine user role.
-     * Replace with actual logic for fetching the user role from the database or another source.
-     */
-    private String determineUserRole(String email) {
-        // Replace this with your actual logic to determine the user's role
-        if (email.endsWith("teacher.com")) {
-            return "Teacher";
-        } else if (email.endsWith("student.com")) {
-            return "Student";
-        } else {
-            return "Librarian";
+        String token = authorizationHeader.replace("Bearer ", "");
+
+        try {
+            String email = tokenService.verifyToken(token);
+            Optional<User> userOptional = userRepository.findByEmail(email);
+
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+
+                return ResponseEntity.ok(Map.of(
+                        "user", Map.of(
+                                "email", user.getEmail(),
+                                "role", user.getRole(),
+                                "idNumber", user.getIdNumber()
+                        )
+                ));
+            } else {
+                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
         }
     }
 }
