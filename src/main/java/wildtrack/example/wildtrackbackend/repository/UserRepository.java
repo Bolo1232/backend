@@ -11,4 +11,5 @@ import wildtrack.example.wildtrackbackend.entity.User;
 public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email); // Check if email already exists
     Optional<User> findByEmail(String email); // Find user by email
+    Optional<User> findByIdNumber(String idNumber);
 }

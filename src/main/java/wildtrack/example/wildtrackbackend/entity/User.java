@@ -38,6 +38,16 @@ public class User {
     @Column(name = "role", nullable = false)
     private String role;
 
+    // Additional fields for students
+    @Column(name = "id_number", nullable = true, unique = true)
+    private String idNumber;
+
+    @Column(name = "grade", nullable = true)
+    private String grade;
+
+    @Column(name = "section", nullable = true)
+    private String section;
+
     // Getters and setters
     public Long getId() {
         return id;
@@ -85,5 +95,29 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getIdNumber() {
+        return idNumber;
+    }
+
+    public void setIdNumber(String idNumber) {
+        this.idNumber = idNumber;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public void setGrade(String grade) {
+        this.grade = grade;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
     }
 }

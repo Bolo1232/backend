@@ -16,7 +16,7 @@ public class UserService {
     private UserRepository userRepository;
 
     public boolean isEmailExists(String email) {
-        return userRepository.existsByEmail(email); // This must return `true` if the email exists
+        return userRepository.existsByEmail(email); // This must return true if the email exists
     }    
 
     public void saveUser(User user) {
@@ -27,5 +27,8 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+    public User findByIdNumber(String idNumber) {
+        return userRepository.findByIdNumber(idNumber).orElse(null);
     }
 }
