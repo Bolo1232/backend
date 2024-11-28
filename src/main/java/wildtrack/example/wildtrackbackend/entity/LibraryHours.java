@@ -16,6 +16,18 @@ public class LibraryHours {
 
     @Column(name = "time_in", nullable = false)
     private LocalDateTime timeIn;
+    @Column(name = "book_title")
+    private String bookTitle;
+
+    public String getBookTitle() {
+        return bookTitle;
+    }
+
+    public void setBookTitle(String bookTitle) {
+        this.bookTitle = bookTitle;
+    }
+
+    private LocalDateTime timeOut;
 
     // Getters and setters
     public Long getId() {
@@ -40,5 +52,12 @@ public class LibraryHours {
 
     public void setTimeIn(LocalDateTime timeIn) {
         this.timeIn = timeIn;
+    }
+    public LocalDateTime getTimeOut() {
+        return timeOut;
+    }
+
+    public void setTimeOut(LocalDateTime timeOut) {
+        this.timeOut = timeOut;
     }
 }
