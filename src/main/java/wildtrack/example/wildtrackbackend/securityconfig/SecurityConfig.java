@@ -21,7 +21,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .cors().and() // Enable CORS
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
-                "/api/users/register",  // Registration endpoint
+                "/api/users/register",
+                "/api/**",  // Registration endpoint
                 "/api/login",          // Login endpoint
                 "/api/verify-token",
                 "/api/library-hours/**",
