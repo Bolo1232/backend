@@ -41,8 +41,7 @@ public class LoginController {
                         "message", "Login successful",
                         "token", token,
                         "role", user.getRole(),
-                        "idNumber", user.getIdNumber()
-                ));
+                        "idNumber", user.getIdNumber()));
             } else {
                 return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
             }
@@ -71,9 +70,7 @@ public class LoginController {
                         "user", Map.of(
                                 "email", user.getEmail(),
                                 "role", user.getRole(),
-                                "idNumber", user.getIdNumber()
-                        )
-                ));
+                                "idNumber", user.getIdNumber())));
             } else {
                 return ResponseEntity.status(404).body(Map.of("error", "User not found"));
             }

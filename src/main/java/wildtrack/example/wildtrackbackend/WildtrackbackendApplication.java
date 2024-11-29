@@ -9,4 +9,3 @@ public class WildtrackbackendApplication {
         SpringApplication.run(WildtrackbackendApplication.class, args);
     }
 }
-

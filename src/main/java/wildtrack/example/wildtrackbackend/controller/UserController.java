@@ -29,15 +29,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email already exists."));
             }
 
+            // Validate fields based on role
             if ("Student".equalsIgnoreCase(user.getRole())) {
-                if (user.getIdNumber() == null || user.getIdNumber().isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "ID Number is required for students."));
-                }
-                if (user.getGrade() == null || user.getGrade().isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Grade is required for students."));
-                }
-                if (user.getSection() == null || user.getSection().isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Section is required for students."));
+                if (user.getGrade() == null || user.getSection() == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(Map.of("error", "Grade and Section are required for students."));
                 }
             }
 
@@ -45,7 +41,7 @@ public class UserController {
             return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An error occurred while registering the user."));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An error occurred."));
         }
     }
 
@@ -57,6 +53,31 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", "An error occurred while fetching users."));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            User updatedUser = userService.updateUser(id, user);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        try {
+            if (!userService.existsById(id)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found."));
+            }
+            userService.deleteUserById(id);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred while deleting the user."));
         }
     }
 }
