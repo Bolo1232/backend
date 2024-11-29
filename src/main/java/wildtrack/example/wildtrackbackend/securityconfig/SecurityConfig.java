@@ -16,31 +16,31 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     @Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf().disable() // Disable CSRF since you're using JWT
-        .cors().and() // Enable CORS
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/api/users/register",
-                "/api/**",  // Registration endpoint
-                "/api/login",          // Login endpoint
-                "/api/verify-token",
-                "/api/library-hours/**",
-                 "/api/books/**",
-                  "/api/users/**"    // Token verification endpoint
-            ).permitAll() // Allow unauthenticated access to these endpoints
-            .anyRequest().authenticated() // All other requests require authentication
-        )
-        .httpBasic(); // Keep Basic Authentication for now
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf().disable() // Disable CSRF since you're using JWT
+                .cors().and() // Enable CORS
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/users/register",
+                                "/api/**", // Registration endpoint
+                                "/api/login", // Login endpoint
+                                "/api/verify-token",
+                                "/api/library-hours/**",
+                                "/api/books/**",
+                                "/api/users/**" // Token verification endpoint
+                        ).permitAll() // Allow unauthenticated access to these endpoints
+                        .anyRequest().authenticated() // All other requests require authentication
+                )
+                .httpBasic(); // Keep Basic Authentication for now
 
-    return http.build();
-}
-
+        return http.build();
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174")); // Frontend origins
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174")); // Frontend //
+                                                                                                          // origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true); // Allow credentials if needed

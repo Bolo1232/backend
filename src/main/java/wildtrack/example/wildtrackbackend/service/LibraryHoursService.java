@@ -7,6 +7,7 @@ import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class LibraryHoursService {
@@ -14,27 +15,26 @@ public class LibraryHoursService {
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
 
-    // Method to record time-in
-    // Method to record time-in
+    // Record a time-in entry
     public void recordTimeIn(String idNumber) {
-        // Check if there is an open time-in record for the given idNumber
+        // Check for an open time-in record
         LibraryHours openTimeIn = libraryHoursRepository.findLatestByIdNumber(idNumber)
                 .filter(libraryHours -> libraryHours.getTimeOut() == null)
                 .orElse(null);
 
         if (openTimeIn != null) {
-            throw new RuntimeException("You already have a time-in recorded without a time-out. Please record a time-out before clocking in again.");
+            throw new RuntimeException(
+                    "You already have a time-in recorded without a time-out. Please record a time-out before clocking in again.");
         }
 
-        // If no open time-in, create a new time-in record
+        // Create a new time-in record
         LibraryHours libraryHours = new LibraryHours();
         libraryHours.setIdNumber(idNumber);
         libraryHours.setTimeIn(LocalDateTime.now());
         libraryHoursRepository.save(libraryHours);
     }
 
-
-    // Method to record time-out
+    // Record a time-out entry
     public void recordTimeOut(String idNumber) {
         LibraryHours libraryHours = libraryHoursRepository.findLatestByIdNumber(idNumber)
                 .orElseThrow(() -> new RuntimeException("No open time-in record found for this student."));
@@ -48,21 +48,23 @@ public class LibraryHoursService {
         libraryHoursRepository.save(libraryHours);
     }
 
-    // Method to fetch all library hours
+    // Fetch all library hours
     public List<LibraryHours> getAllLibraryHours() {
         return libraryHoursRepository.findAll();
     }
 
-    // Method to fetch library hours by ID number
+    // Fetch library hours by user ID number
     public List<LibraryHours> getLibraryHoursByIdNumber(String idNumber) {
         return libraryHoursRepository.findByIdNumber(idNumber);
     }
-    public void updateBookForLibraryHours(Long id, String bookTitle) {
-        LibraryHours libraryHours = libraryHoursRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Library record not found."));
-    
-        libraryHours.setBookTitle(bookTitle);
-        libraryHoursRepository.save(libraryHours);
+
+    // Fetch a specific library hours record by ID
+    public Optional<LibraryHours> getLibraryHoursById(Long id) {
+        return libraryHoursRepository.findById(id);
     }
-    
+
+    // Save or update a library hours record
+    public LibraryHours saveLibraryHours(LibraryHours libraryHours) {
+        return libraryHoursRepository.save(libraryHours);
+    }
 }
