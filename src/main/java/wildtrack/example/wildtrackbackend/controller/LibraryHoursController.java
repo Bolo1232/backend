@@ -77,6 +77,18 @@ public class LibraryHoursController {
         }
     }
 
+    @GetMapping("/with-user-details")
+    public ResponseEntity<?> getAllLibraryHoursWithUserDetails() {
+        try {
+            List<Map<String, Object>> response = libraryHoursService.getAllLibraryHoursWithUserDetails();
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred while fetching library hours."));
+        }
+    }
+
     @GetMapping("/user/{idNumber}")
     public ResponseEntity<?> getLibraryHoursByUser(@PathVariable String idNumber) {
         try {
