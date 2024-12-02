@@ -4,16 +4,70 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
 import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
+import wildtrack.example.wildtrackbackend.repository.UserRepository;
+import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
+import wildtrack.example.wildtrackbackend.entity.User;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class LibraryHoursService {
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    public List<StudentLibrarySummary> getLibraryHoursSummary() {
+        List<User> users = userRepository.findAll();
+        List<StudentLibrarySummary> summaries = new ArrayList<>();
+
+        // Formatter for 12-hour time with AM/PM
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm:ss a");
+
+        for (User user : users) {
+            List<LibraryHours> libraryHoursList = libraryHoursRepository.findByIdNumber(user.getIdNumber());
+
+            if (!libraryHoursList.isEmpty()) {
+                LibraryHours latestRecord = libraryHoursList.get(libraryHoursList.size() - 1);
+
+                // Calculate total minutes
+                long totalMinutes = libraryHoursList.stream()
+                        .mapToLong(hours -> {
+                            if (hours.getTimeIn() != null && hours.getTimeOut() != null) {
+                                return Duration.between(hours.getTimeIn(), hours.getTimeOut()).toMinutes();
+                            }
+                            return 0;
+                        }).sum();
+
+                // Create summary
+                StudentLibrarySummary summary = new StudentLibrarySummary();
+                summary.setIdNumber(user.getIdNumber());
+                summary.setFirstName(user.getFirstName());
+                summary.setLastName(user.getLastName());
+                summary.setLatestLibraryHourDate(latestRecord.getTimeIn().toLocalDate().toString());
+                summary.setLatestTimeIn(latestRecord.getTimeIn().format(timeFormatter)); // Format as 12-hour time
+                summary.setLatestTimeOut(latestRecord.getTimeOut() != null
+                        ? latestRecord.getTimeOut().format(timeFormatter)
+                        : "N/A");
+                summary.setTotalMinutes(String.valueOf(totalMinutes));
+
+                summaries.add(summary);
+            }
+        }
+
+        return summaries;
+    }
 
     // Record a time-in entry
     public void recordTimeIn(String idNumber) {
@@ -67,4 +121,32 @@ public class LibraryHoursService {
     public LibraryHours saveLibraryHours(LibraryHours libraryHours) {
         return libraryHoursRepository.save(libraryHours);
     }
+
+    // Calculate Active Library Hours Participants (Average minutes spent by all
+    // students)
+    public double calculateAverageMinutes() {
+        List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
+
+        // Calculate minutes for each record
+        List<Long> durations = libraryHours.stream()
+                .filter(lh -> lh.getTimeIn() != null && lh.getTimeOut() != null)
+                .map(lh -> java.time.Duration.between(lh.getTimeIn(), lh.getTimeOut()).toMinutes())
+                .collect(Collectors.toList());
+
+        // Calculate average
+        return durations.isEmpty() ? 0 : durations.stream().mapToLong(Long::longValue).average().orElse(0);
+    }
+
+    // Calculate Accession Usage Frequency
+    public Map<String, Long> calculateAccessionUsageFrequency() {
+        List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
+
+        // Count occurrences of each book title
+        return libraryHours.stream()
+                .filter(lh -> lh.getBookTitle() != null && !lh.getBookTitle().isEmpty())
+                .collect(Collectors.groupingBy(LibraryHours::getBookTitle, Collectors.counting()));
+    }
+
+    // Fetch all library hours
+
 }

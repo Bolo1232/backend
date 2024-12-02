@@ -53,6 +53,7 @@ public class LibraryHours {
     public void setTimeIn(LocalDateTime timeIn) {
         this.timeIn = timeIn;
     }
+
     public LocalDateTime getTimeOut() {
         return timeOut;
     }
