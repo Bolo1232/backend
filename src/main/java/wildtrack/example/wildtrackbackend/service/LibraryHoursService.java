@@ -1,12 +1,17 @@
 package wildtrack.example.wildtrackbackend.service;
 
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
+import wildtrack.example.wildtrackbackend.entity.User;
 import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
 import wildtrack.example.wildtrackbackend.repository.UserRepository;
 import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
 import wildtrack.example.wildtrackbackend.entity.User;
+
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -24,8 +29,10 @@ public class LibraryHoursService {
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
+     private UserService userService;
 
     @Autowired
+
     private UserRepository userRepository;
 
     public List<StudentLibrarySummary> getLibraryHoursSummary() {
@@ -69,6 +76,7 @@ public class LibraryHoursService {
         return summaries;
     }
 
+
     // Record a time-in entry
     public void recordTimeIn(String idNumber) {
         // Check for an open time-in record
@@ -110,6 +118,26 @@ public class LibraryHoursService {
     // Fetch library hours by user ID number
     public List<LibraryHours> getLibraryHoursByIdNumber(String idNumber) {
         return libraryHoursRepository.findByIdNumber(idNumber);
+    }
+
+    // Fetch all library hours with user details
+    public List<Map<String, Object>> getAllLibraryHoursWithUserDetails() {
+        List<LibraryHours> libraryHoursList = libraryHoursRepository.findAll();
+        List<Map<String, Object>> response = new ArrayList<>();
+
+        for (LibraryHours libraryHours : libraryHoursList) {
+            User user = userService.findByIdNumber(libraryHours.getIdNumber());
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("id", libraryHours.getId());
+            entry.put("idNumber", libraryHours.getIdNumber());
+            entry.put("firstName", user != null ? user.getFirstName() : "Unknown");
+            entry.put("lastName", user != null ? user.getLastName() : "Unknown");
+            entry.put("timeIn", libraryHours.getTimeIn());
+            entry.put("timeOut", libraryHours.getTimeOut());
+            entry.put("status", libraryHours.getTimeOut() != null ? "Present" : "Incomplete");
+            response.add(entry);
+        }
+        return response;
     }
 
     // Fetch a specific library hours record by ID
