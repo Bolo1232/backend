@@ -21,4 +21,3 @@ public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 }
-
