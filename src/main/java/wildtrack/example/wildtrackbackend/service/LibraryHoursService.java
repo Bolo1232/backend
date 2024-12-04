@@ -1,38 +1,34 @@
 package wildtrack.example.wildtrackbackend.service;
 
-
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import wildtrack.example.wildtrackbackend.entity.LibraryHours;
-import wildtrack.example.wildtrackbackend.entity.User;
-import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
-import wildtrack.example.wildtrackbackend.repository.UserRepository;
-import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
-import wildtrack.example.wildtrackbackend.entity.User;
-
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
+import wildtrack.example.wildtrackbackend.entity.LibraryHours;
+import wildtrack.example.wildtrackbackend.entity.User;
+import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
+import wildtrack.example.wildtrackbackend.repository.UserRepository;
 
 @Service
 public class LibraryHoursService {
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
-     private UserService userService;
 
     @Autowired
+    private UserService userService;
 
+    @Autowired
     private UserRepository userRepository;
 
     public List<StudentLibrarySummary> getLibraryHoursSummary() {
@@ -75,7 +71,6 @@ public class LibraryHoursService {
 
         return summaries;
     }
-
 
     // Record a time-in entry
     public void recordTimeIn(String idNumber) {
@@ -132,6 +127,7 @@ public class LibraryHoursService {
             entry.put("idNumber", libraryHours.getIdNumber());
             entry.put("firstName", user != null ? user.getFirstName() : "Unknown");
             entry.put("lastName", user != null ? user.getLastName() : "Unknown");
+            entry.put("gradeSection", user != null ? (user.getGrade() + " - " + user.getSection()) : "N/A");
             entry.put("timeIn", libraryHours.getTimeIn());
             entry.put("timeOut", libraryHours.getTimeOut());
             entry.put("status", libraryHours.getTimeOut() != null ? "Present" : "Incomplete");
@@ -139,6 +135,24 @@ public class LibraryHoursService {
         }
         return response;
     }
+    public List<Map<String, Object>> getCompletedLibraryHours() {
+        List<LibraryHours> libraryHoursList = libraryHoursRepository.findAll();
+        List<Map<String, Object>> response = new ArrayList<>();
+    
+        for (LibraryHours libraryHours : libraryHoursList) {
+            if (libraryHours.getTimeIn() != null && libraryHours.getTimeOut() != null) {
+                User user = userService.findByIdNumber(libraryHours.getIdNumber());
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("idNumber", libraryHours.getIdNumber());
+                entry.put("name", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown");
+                entry.put("timeIn", libraryHours.getTimeIn());
+                entry.put("timeOut", libraryHours.getTimeOut());
+                response.add(entry);
+            }
+        }
+        return response;
+    }
+    
 
     // Fetch a specific library hours record by ID
     public Optional<LibraryHours> getLibraryHoursById(Long id) {
@@ -150,8 +164,7 @@ public class LibraryHoursService {
         return libraryHoursRepository.save(libraryHours);
     }
 
-    // Calculate Active Library Hours Participants (Average minutes spent by all
-    // students)
+    // Calculate Active Library Hours Participants (Average minutes spent by all students)
     public double calculateAverageMinutes() {
         List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
 
@@ -174,7 +187,5 @@ public class LibraryHoursService {
                 .filter(lh -> lh.getBookTitle() != null && !lh.getBookTitle().isEmpty())
                 .collect(Collectors.groupingBy(LibraryHours::getBookTitle, Collectors.counting()));
     }
-
-    // Fetch all library hours
-
 }
+
