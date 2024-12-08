@@ -1,12 +1,13 @@
 package wildtrack.example.wildtrackbackend.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import wildtrack.example.wildtrackbackend.entity.Book;
-import wildtrack.example.wildtrackbackend.repository.BookRepository;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import wildtrack.example.wildtrackbackend.entity.Book;
+import wildtrack.example.wildtrackbackend.repository.BookRepository;
 
 @Service
 public class BookService {
@@ -27,6 +28,11 @@ public class BookService {
     // Check if a book exists by accession number
     public boolean existsByAccessionNumber(String accessionNumber) {
         return bookRepository.existsByAccessionNumber(accessionNumber);
+    }
+
+    // Check if a book exists by ISBN
+    public boolean existsByIsbn(String isbn) {
+        return bookRepository.existsByIsbn(isbn);
     }
 
     // Fetch a book by ID
