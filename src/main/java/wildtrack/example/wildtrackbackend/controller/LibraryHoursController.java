@@ -1,17 +1,24 @@
 package wildtrack.example.wildtrackbackend.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import wildtrack.example.wildtrackbackend.entity.LibraryHours;
-import wildtrack.example.wildtrackbackend.service.LibraryHoursService;
-import wildtrack.example.wildtrackbackend.entity.User;
-import wildtrack.example.wildtrackbackend.service.UserService;
-import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
+import wildtrack.example.wildtrackbackend.entity.LibraryHours;
+import wildtrack.example.wildtrackbackend.entity.User;
+import wildtrack.example.wildtrackbackend.service.LibraryHoursService;
+import wildtrack.example.wildtrackbackend.service.UserService;
 
 @RestController
 @RequestMapping("/api/library-hours")
@@ -28,16 +35,13 @@ public class LibraryHoursController {
     public ResponseEntity<Map<String, Double>> getAverageMinutes() {
         try {
             double averageMinutes = libraryHoursService.calculateAverageMinutes();
-            // Ensure the response type explicitly matches Map<String, Double>
             return ResponseEntity.ok(Map.of("averageMinutes", averageMinutes));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null); // null here because a map cannot hold error messages
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
-    // API to get Accession Usage Frequency
     @GetMapping("/analytics/accession-usage")
     public ResponseEntity<Map<String, Long>> getAccessionUsageFrequency() {
         try {
@@ -45,8 +49,7 @@ public class LibraryHoursController {
             return ResponseEntity.ok(accessionFrequency);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -55,7 +58,6 @@ public class LibraryHoursController {
         String idNumber = request.get("idNumber");
         try {
             User user = userService.findByIdNumber(idNumber);
-
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Student not found."));
             }
@@ -76,13 +78,11 @@ public class LibraryHoursController {
         String idNumber = request.get("idNumber");
         try {
             User user = userService.findByIdNumber(idNumber);
-
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Student not found."));
             }
 
             libraryHoursService.recordTimeOut(idNumber);
-
             return ResponseEntity.ok(Map.of("message", "Time-out recorded successfully.", "student", user));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
@@ -107,8 +107,13 @@ public class LibraryHoursController {
 
     @GetMapping("/summary")
     public ResponseEntity<List<StudentLibrarySummary>> getLibraryHoursSummary() {
-        List<StudentLibrarySummary> summaries = libraryHoursService.getLibraryHoursSummary();
-        return ResponseEntity.ok(summaries);
+        try {
+            List<StudentLibrarySummary> summaries = libraryHoursService.getLibraryHoursSummary();
+            return ResponseEntity.ok(summaries);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/all")
@@ -117,12 +122,13 @@ public class LibraryHoursController {
             List<LibraryHours> libraryHours = libraryHoursService.getAllLibraryHours();
             return ResponseEntity.ok(libraryHours);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @GetMapping("/with-user-details")
-    public ResponseEntity<?> getAllLibraryHoursWithUserDetails() {
+    public ResponseEntity<List<Map<String, Object>>> getAllLibraryHoursWithUserDetails() {
         try {
             List<Map<String, Object>> response = libraryHoursService.getAllLibraryHoursWithUserDetails();
             return ResponseEntity.ok(response);

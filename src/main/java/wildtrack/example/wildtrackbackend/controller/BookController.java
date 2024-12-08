@@ -1,16 +1,24 @@
 package wildtrack.example.wildtrackbackend.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import wildtrack.example.wildtrackbackend.entity.Book;
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
 import wildtrack.example.wildtrackbackend.service.BookService;
 import wildtrack.example.wildtrackbackend.service.LibraryHoursService;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/books")
@@ -28,6 +36,10 @@ public class BookController {
         try {
             if (bookService.existsByAccessionNumber(book.getAccessionNumber())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Accession number already exists.");
+            }
+
+            if (bookService.existsByIsbn(book.getIsbn())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ISBN already exists.");
             }
 
             Book savedBook = bookService.saveBook(book);
