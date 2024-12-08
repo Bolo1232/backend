@@ -15,6 +15,10 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    public List<User> getStudentsByRole(String role) {
+        return userRepository.findByRole(role); // Fetch users filtered by role
+    }
+
     public boolean isEmailExists(String email) {
         return userRepository.existsByEmail(email); // This must return true if the email exists
     }

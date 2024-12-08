@@ -133,14 +133,4 @@ public class LibraryHoursController {
         }
     }
 
-    @GetMapping("/user/{idNumber}")
-    public ResponseEntity<?> getLibraryHoursByUser(@PathVariable String idNumber) {
-        try {
-            List<LibraryHours> libraryHours = libraryHoursService.getAllLibraryHours();
-            return ResponseEntity.ok(libraryHours);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
 }

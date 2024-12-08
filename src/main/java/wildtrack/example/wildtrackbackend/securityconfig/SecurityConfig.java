@@ -27,7 +27,8 @@ public class SecurityConfig {
                                 "/api/verify-token",
                                 "/api/library-hours/**",
                                 "/api/books/**",
-                                "/api/users/**" // Token verification endpoint
+                                "/api/users/**",
+                                "/api/students/**" // Token verification endpoint
                         ).permitAll() // Allow unauthenticated access to these endpoints
                         .anyRequest().authenticated() // All other requests require authentication
                 )
