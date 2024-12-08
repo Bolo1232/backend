@@ -48,7 +48,31 @@ public class User {
     @Column(name = "section", nullable = true)
     private String section;
 
-    // Getters and setters
+    // New fields: Quarter and Subject
+    @Column(name = "quarter", nullable = true)
+    private String quarter;
+
+    @Column(name = "subject", nullable = true)
+    private String subject;
+
+    // Getters and setters for the new fields
+    public String getQuarter() {
+        return quarter;
+    }
+
+    public void setQuarter(String quarter) {
+        this.quarter = quarter;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    // Getters and setters for existing fields
     public Long getId() {
         return id;
     }
