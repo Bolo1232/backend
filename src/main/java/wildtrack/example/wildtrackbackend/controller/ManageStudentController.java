@@ -22,7 +22,7 @@ public class ManageStudentController {
     @GetMapping("/all")
     public ResponseEntity<?> getAllStudents() {
         try {
-            List<User> students = userService.getStudentsByRole("Student");
+            List<User> students = userService.getUsersByRole("Student");
             return ResponseEntity.ok(students);
         } catch (Exception e) {
             e.printStackTrace();

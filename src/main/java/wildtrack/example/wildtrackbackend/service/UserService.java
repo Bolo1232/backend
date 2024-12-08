@@ -15,7 +15,7 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public List<User> getStudentsByRole(String role) {
+    public List<User> getUsersByRole(String role) {
         return userRepository.findByRole(role); // Fetch users filtered by role
     }
 
@@ -48,6 +48,8 @@ public class UserService {
         existingUser.setIdNumber(updatedUserDetails.getIdNumber());
         existingUser.setGrade(updatedUserDetails.getGrade());
         existingUser.setSection(updatedUserDetails.getSection());
+        existingUser.setQuarter(updatedUserDetails.getQuarter());
+        existingUser.setSubject(updatedUserDetails.getSubject());
 
         return userRepository.save(existingUser);
     }
@@ -59,4 +61,5 @@ public class UserService {
     public void deleteUserById(Long id) {
         userRepository.deleteById(id);
     }
+
 }
