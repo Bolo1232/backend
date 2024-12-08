@@ -135,7 +135,8 @@ public class LibraryHoursController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+                    .body(Map.of("error", "An error occurred while fetching library hours."));
         }
     }
+
 }
