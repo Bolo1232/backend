@@ -24,6 +24,12 @@ public class Book {
     @Column(name = "accession_number", nullable = false, unique = true)
     private String accessionNumber;
 
+    @Column(nullable = false, unique = true)
+    private String isbn;
+
+    @Column(nullable = false)
+    private String genre;
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -55,5 +61,21 @@ public class Book {
 
     public void setAccessionNumber(String accessionNumber) {
         this.accessionNumber = accessionNumber;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
     }
 }

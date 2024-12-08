@@ -8,4 +8,6 @@ import wildtrack.example.wildtrackbackend.entity.Book;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
     boolean existsByAccessionNumber(String accessionNumber);
+
+    boolean existsByIsbn(String isbn); // New method for ISBN uniqueness
 }
