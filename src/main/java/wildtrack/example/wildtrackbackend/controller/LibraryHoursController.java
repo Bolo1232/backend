@@ -128,7 +128,7 @@ public class LibraryHoursController {
     }
 
     @GetMapping("/with-user-details")
-    public ResponseEntity<List<Map<String, Object>>> getAllLibraryHoursWithUserDetails() {
+    public ResponseEntity<?> getAllLibraryHoursWithUserDetails() {
         try {
             List<Map<String, Object>> response = libraryHoursService.getAllLibraryHoursWithUserDetails();
             return ResponseEntity.ok(response);
