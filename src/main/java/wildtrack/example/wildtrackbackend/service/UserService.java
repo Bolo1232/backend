@@ -50,6 +50,8 @@ public class UserService {
         existingUser.setSection(updatedUserDetails.getSection());
         existingUser.setQuarter(updatedUserDetails.getQuarter());
         existingUser.setSubject(updatedUserDetails.getSubject());
+        existingUser.setWorkPeriod(updatedUserDetails.getWorkPeriod());
+        existingUser.setAssignedTask(updatedUserDetails.getAssignedTask());
 
         return userRepository.save(existingUser);
     }

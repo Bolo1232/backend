@@ -29,7 +29,8 @@ public class SecurityConfig {
                                 "/api/books/**",
                                 "/api/users/**",
                                 "/api/students/**",
-                                "/api/teachers/**" // Token verification endpoint
+                                "/api/teachers/**",
+                                "/api/nas-students/**" // Token verification endpoint
                         ).permitAll() // Allow unauthenticated access to these endpoints
                         .anyRequest().authenticated() // All other requests require authentication
                 )
