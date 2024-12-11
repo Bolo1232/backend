@@ -47,12 +47,6 @@ public class ManageTeacherController {
                         .body(Map.of("error", "Only teachers can be registered."));
             }
 
-            // Validate quarter and subject for teachers
-            if (user.getQuarter() == null || user.getQuarter().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Quarter is required."));
-            }
-
             if (user.getSubject() == null || user.getSubject().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Subject is required."));
@@ -76,12 +70,6 @@ public class ManageTeacherController {
             if (!"Teacher".equalsIgnoreCase(user.getRole())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Only teachers can be updated."));
-            }
-
-            // Validate quarter and subject
-            if (user.getQuarter() == null || user.getQuarter().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Quarter is required."));
             }
 
             if (user.getSubject() == null || user.getSubject().isEmpty()) {

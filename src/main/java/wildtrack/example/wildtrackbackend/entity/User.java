@@ -55,7 +55,30 @@ public class User {
     @Column(name = "subject", nullable = true)
     private String subject;
 
+    @Column(name = "work_period", nullable = true)
+    private String workPeriod;
+
+    @Column(name = "assigned_task", nullable = true)
+    private String assignedTask;
+
     // Getters and setters for the new fields
+
+    public String getWorkPeriod() {
+        return workPeriod;
+    }
+
+    public void setWorkPeriod(String workPeriod) {
+        this.workPeriod = workPeriod;
+    }
+
+    public String getAssignedTask() {
+        return assignedTask;
+    }
+
+    public void setAssignedTask(String assignedTask) {
+        this.assignedTask = assignedTask;
+    }
+
     public String getQuarter() {
         return quarter;
     }
