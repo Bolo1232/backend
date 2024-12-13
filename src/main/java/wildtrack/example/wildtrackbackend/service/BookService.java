@@ -25,6 +25,11 @@ public class BookService {
         return bookRepository.findAll();
     }
 
+    // Retrieve all books by genre
+    public List<Book> getBooksByGenre(String genre) {
+        return bookRepository.findByGenre(genre);
+    }
+
     // Check if a book exists by accession number
     public boolean existsByAccessionNumber(String accessionNumber) {
         return bookRepository.existsByAccessionNumber(accessionNumber);
@@ -35,8 +40,30 @@ public class BookService {
         return bookRepository.existsByIsbn(isbn);
     }
 
-    // Fetch a book by ID
+    // Retrieve a book by its ID
     public Optional<Book> getBookById(Long id) {
         return bookRepository.findById(id);
+    }
+
+    // Update an existing book
+    public Optional<Book> updateBook(Long id, Book updatedBook) {
+        return bookRepository.findById(id).map(existingBook -> {
+            existingBook.setAuthor(updatedBook.getAuthor());
+            existingBook.setTitle(updatedBook.getTitle());
+            existingBook.setAccessionNumber(updatedBook.getAccessionNumber());
+            existingBook.setIsbn(updatedBook.getIsbn());
+            existingBook.setGenre(updatedBook.getGenre());
+            return bookRepository.save(existingBook);
+        });
+    }
+
+    // Delete a book by its ID
+    public void deleteBook(Long id) {
+        bookRepository.deleteById(id);
+    }
+
+    // Delete all books
+    public void deleteAllBooks() {
+        bookRepository.deleteAll();
     }
 }
