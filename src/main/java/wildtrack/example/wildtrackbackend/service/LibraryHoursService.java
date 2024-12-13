@@ -187,5 +187,52 @@ public class LibraryHoursService {
                 .filter(lh -> lh.getBookTitle() != null && !lh.getBookTitle().isEmpty())
                 .collect(Collectors.groupingBy(LibraryHours::getBookTitle, Collectors.counting()));
     }
+    public StudentLibrarySummary updateStudentLibrarySummary(String idNumber, StudentLibrarySummary summaryUpdate) {
+        // Fetch the latest record by ID Number
+        LibraryHours libraryHours = libraryHoursRepository.findLatestByIdNumber(idNumber)
+                .orElseThrow(() -> new RuntimeException("No record found for the provided ID number."));
+    
+        // Update the entity `LibraryHours` with the new data
+        if (summaryUpdate.getLatestLibraryHourDate() != null && !summaryUpdate.getLatestLibraryHourDate().isEmpty()) {
+            LocalDateTime newTimeIn = LocalDateTime.parse(
+                summaryUpdate.getLatestLibraryHourDate() + "T" + libraryHours.getTimeIn().toLocalTime().toString()
+            );
+            libraryHours.setTimeIn(newTimeIn);
+        }
+    
+        if (summaryUpdate.getLatestTimeIn() != null && !summaryUpdate.getLatestTimeIn().isEmpty()) {
+            libraryHours.setTimeIn(LocalDateTime.parse(
+                libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeIn(),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+            ));
+        }
+    
+        if (summaryUpdate.getLatestTimeOut() != null && !summaryUpdate.getLatestTimeOut().isEmpty()) {
+            libraryHours.setTimeOut(LocalDateTime.parse(
+                libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeOut(),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+            ));
+        }
+    
+        // Save the updated entity
+        libraryHoursRepository.save(libraryHours);
+    
+        // Calculate total minutes and update the DTO
+        long completedMinutes = libraryHours.getTimeIn() != null && libraryHours.getTimeOut() != null
+                ? Duration.between(libraryHours.getTimeIn(), libraryHours.getTimeOut()).toMinutes()
+                : 0;
+    
+        StudentLibrarySummary updatedSummary = new StudentLibrarySummary();
+        updatedSummary.setIdNumber(idNumber);
+        updatedSummary.setLatestLibraryHourDate(libraryHours.getTimeIn().toLocalDate().toString());
+        updatedSummary.setLatestTimeIn(libraryHours.getTimeIn().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        updatedSummary.setLatestTimeOut(libraryHours.getTimeOut() != null
+                ? libraryHours.getTimeOut().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                : null);
+        updatedSummary.setTotalMinutes(String.valueOf(completedMinutes));
+    
+        return updatedSummary;
+    }
+    
 }
 
