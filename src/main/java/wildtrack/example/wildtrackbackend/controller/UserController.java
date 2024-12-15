@@ -80,4 +80,19 @@ public class UserController {
                     .body(Map.of("error", "An error occurred while deleting the user."));
         }
     }
+
+    @GetMapping("/{idNumber}")
+    public ResponseEntity<?> getUserByIdNumber(@PathVariable String idNumber) {
+        try {
+            User user = userService.getUserByIdNumber(idNumber);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found."));
+            }
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An error occurred."));
+        }
+    }
+
 }

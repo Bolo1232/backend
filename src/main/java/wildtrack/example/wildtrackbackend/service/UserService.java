@@ -64,4 +64,8 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    public User getUserByIdNumber(String idNumber) {
+        return userRepository.findByIdNumber(idNumber).orElse(null);
+    }
+
 }
