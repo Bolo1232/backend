@@ -164,30 +164,6 @@ public class LibraryHoursService {
         return libraryHoursRepository.save(libraryHours);
     }
 
-    // Calculate Active Library Hours Participants (Average minutes spent by all
-    // students)
-    public double calculateAverageMinutes() {
-        List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
-
-        // Calculate minutes for each record
-        List<Long> durations = libraryHours.stream()
-                .filter(lh -> lh.getTimeIn() != null && lh.getTimeOut() != null)
-                .map(lh -> java.time.Duration.between(lh.getTimeIn(), lh.getTimeOut()).toMinutes())
-                .collect(Collectors.toList());
-
-        // Calculate average
-        return durations.isEmpty() ? 0 : durations.stream().mapToLong(Long::longValue).average().orElse(0);
-    }
-
-    // Calculate Accession Usage Frequency
-    public Map<String, Long> calculateAccessionUsageFrequency() {
-        List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
-
-        // Count occurrences of each book title
-        return libraryHours.stream()
-                .filter(lh -> lh.getBookTitle() != null && !lh.getBookTitle().isEmpty())
-                .collect(Collectors.groupingBy(LibraryHours::getBookTitle, Collectors.counting()));
-    }
     public StudentLibrarySummary updateStudentLibrarySummary(String idNumber, StudentLibrarySummary summaryUpdate) {
         // Fetch the latest record by ID Number
         LibraryHours libraryHours = libraryHoursRepository.findLatestByIdNumber(idNumber)

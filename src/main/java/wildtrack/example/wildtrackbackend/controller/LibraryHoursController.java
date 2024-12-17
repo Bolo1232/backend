@@ -32,28 +32,6 @@ public class LibraryHoursController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/analytics/average-minutes")
-    public ResponseEntity<Map<String, Double>> getAverageMinutes() {
-        try {
-            double averageMinutes = libraryHoursService.calculateAverageMinutes();
-            return ResponseEntity.ok(Map.of("averageMinutes", averageMinutes));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    @GetMapping("/analytics/accession-usage")
-    public ResponseEntity<Map<String, Long>> getAccessionUsageFrequency() {
-        try {
-            Map<String, Long> accessionFrequency = libraryHoursService.calculateAccessionUsageFrequency();
-            return ResponseEntity.ok(accessionFrequency);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
     @PostMapping("/time-in")
     public ResponseEntity<?> recordTimeIn(@RequestBody Map<String, String> request) {
         String idNumber = request.get("idNumber");
