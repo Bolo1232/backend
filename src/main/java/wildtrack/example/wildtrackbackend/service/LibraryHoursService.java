@@ -135,10 +135,11 @@ public class LibraryHoursService {
         }
         return response;
     }
+
     public List<Map<String, Object>> getCompletedLibraryHours() {
         List<LibraryHours> libraryHoursList = libraryHoursRepository.findAll();
         List<Map<String, Object>> response = new ArrayList<>();
-    
+
         for (LibraryHours libraryHours : libraryHoursList) {
             if (libraryHours.getTimeIn() != null && libraryHours.getTimeOut() != null) {
                 User user = userService.findByIdNumber(libraryHours.getIdNumber());
@@ -152,7 +153,6 @@ public class LibraryHoursService {
         }
         return response;
     }
-    
 
     // Fetch a specific library hours record by ID
     public Optional<LibraryHours> getLibraryHoursById(Long id) {
@@ -164,7 +164,8 @@ public class LibraryHoursService {
         return libraryHoursRepository.save(libraryHours);
     }
 
-    // Calculate Active Library Hours Participants (Average minutes spent by all students)
+    // Calculate Active Library Hours Participants (Average minutes spent by all
+    // students)
     public double calculateAverageMinutes() {
         List<LibraryHours> libraryHours = libraryHoursRepository.findAll();
 
@@ -235,4 +236,3 @@ public class LibraryHoursService {
     }
     
 }
-
