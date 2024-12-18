@@ -28,7 +28,7 @@ public class Book {
     private String isbn;
 
     @Column(nullable = false)
-    private String genre;
+    private String genre; // Use genre name directly
 
     // Getters and Setters
     public Long getId() {
