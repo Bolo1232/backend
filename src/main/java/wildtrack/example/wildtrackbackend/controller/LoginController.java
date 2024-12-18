@@ -24,18 +24,18 @@ public class LoginController {
     @Autowired
     private TokenService tokenService;
 
-    // Login endpoint
+    // Login endpoint (using idNumber)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
-        String email = loginRequest.get("email");
+        String idNumber = loginRequest.get("idNumber"); // Use idNumber instead of email
         String password = loginRequest.get("password");
 
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByIdNumber(idNumber);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
             if (passwordEncoder.matches(password, user.getPassword())) {
-                String token = tokenService.generateToken(email);
+                String token = tokenService.generateToken(idNumber);
 
                 return ResponseEntity.ok(Map.of(
                         "message", "Login successful",
@@ -60,17 +60,16 @@ public class LoginController {
         String token = authorizationHeader.replace("Bearer ", "");
 
         try {
-            String email = tokenService.verifyToken(token);
-            Optional<User> userOptional = userRepository.findByEmail(email);
+            String idNumber = tokenService.verifyToken(token);
+            Optional<User> userOptional = userRepository.findByIdNumber(idNumber);
 
             if (userOptional.isPresent()) {
                 User user = userOptional.get();
 
                 return ResponseEntity.ok(Map.of(
                         "user", Map.of(
-                                "email", user.getEmail(),
-                                "role", user.getRole(),
-                                "idNumber", user.getIdNumber())));
+                                "idNumber", user.getIdNumber(),
+                                "role", user.getRole())));
             } else {
                 return ResponseEntity.status(404).body(Map.of("error", "User not found"));
             }
