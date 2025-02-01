@@ -95,4 +95,19 @@ public class UserController {
         }
     }
 
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> requestBody) {
+        try {
+            Long id = Long.parseLong(requestBody.get("id"));
+            String currentPassword = requestBody.get("currentPassword");
+            String newPassword = requestBody.get("newPassword");
+
+            userService.changePassword(id, currentPassword, newPassword);
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully!"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }

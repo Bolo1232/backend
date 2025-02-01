@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "users")
@@ -61,7 +62,18 @@ public class User {
     @Column(name = "assigned_task", nullable = true)
     private String assignedTask;
 
+    @Transient
+    private String currentPassword;
+
     // Getters and setters for the new fields
+
+    public String getCurrentPassword() {
+        return currentPassword;
+    }
+
+    public void setCurrentPassword(String currentPassword) {
+        this.currentPassword = currentPassword;
+    }
 
     public String getWorkPeriod() {
         return workPeriod;
