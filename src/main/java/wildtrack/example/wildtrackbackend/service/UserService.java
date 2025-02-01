@@ -15,6 +15,21 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    public void changePassword(Long id, String currentPassword, String newPassword) throws Exception {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new Exception("User not found with id: " + id));
+
+        // Verify the current password
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        if (!encoder.matches(currentPassword, user.getPassword())) {
+            throw new Exception("Current password is incorrect.");
+        }
+
+        // Update the password
+        user.setPassword(encoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public List<User> getUsersByRole(String role) {
         return userRepository.findByRole(role); // Fetch users filtered by role
     }
