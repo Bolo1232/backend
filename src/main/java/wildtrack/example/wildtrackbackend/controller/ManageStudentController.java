@@ -70,6 +70,12 @@ public class ManageStudentController {
                         .body(Map.of("error", "Only students can be updated."));
             }
 
+            // Validate required fields for students
+            if (user.getGrade() == null || user.getSection() == null || user.getAcademicYear() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Grade, Section, and Academic Year are required for students."));
+            }
+
             User updatedUser = userService.updateUser(id, user);
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {

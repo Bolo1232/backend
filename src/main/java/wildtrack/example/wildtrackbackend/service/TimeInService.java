@@ -6,12 +6,16 @@ import org.springframework.stereotype.Service;
 
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
 import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
+import wildtrack.example.wildtrackbackend.repository.TimeInRepository;
 
 @Service
 public class TimeInService {
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
+
+    @Autowired
+    private TimeInRepository timeInRepository;
 
     public void recordTimeIn(String idNumber) {
         // Check for an open time-in record
@@ -29,5 +33,10 @@ public class TimeInService {
         libraryHours.setIdNumber(idNumber);
         libraryHours.setTimeIn(LocalDateTime.now());
         libraryHoursRepository.save(libraryHours);
+    }
+
+    public long getActiveStudentsCount() {
+        // Return count of students who have timed in but not timed out
+        return timeInRepository.countByTimeOutIsNull();
     }
 }
