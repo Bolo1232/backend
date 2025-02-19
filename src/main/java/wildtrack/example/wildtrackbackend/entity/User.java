@@ -65,6 +65,18 @@ public class User {
     @Transient
     private String currentPassword;
 
+    @Column(name = "academic_year", nullable = true)
+    private String academicYear;
+
+    // Add getter and setter
+    public String getAcademicYear() {
+        return academicYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+    }
+
     // Getters and setters for the new fields
 
     public String getCurrentPassword() {

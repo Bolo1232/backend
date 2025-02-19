@@ -6,12 +6,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long> {
     List<LibraryHours> findByIdNumber(String idNumber);
+
+    List<LibraryHours> findByTimeInBetweenAndTimeOutIsNotNull(LocalDateTime startDate, LocalDateTime endDate);
+
+    long countByTimeOutIsNotNullAndTimeInBetween(LocalDateTime startDate, LocalDateTime endDate);
 
     @Query("SELECT lh FROM LibraryHours lh WHERE lh.idNumber = :idNumber ORDER BY lh.timeIn DESC")
     List<LibraryHours> findAllByIdNumberOrdered(@Param("idNumber") String idNumber);

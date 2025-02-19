@@ -67,6 +67,7 @@ public class UserService {
         existingUser.setSubject(updatedUserDetails.getSubject());
         existingUser.setWorkPeriod(updatedUserDetails.getWorkPeriod());
         existingUser.setAssignedTask(updatedUserDetails.getAssignedTask());
+        existingUser.setAcademicYear(updatedUserDetails.getAcademicYear());
 
         return userRepository.save(existingUser);
     }
@@ -81,6 +82,11 @@ public class UserService {
 
     public User getUserByIdNumber(String idNumber) {
         return userRepository.findByIdNumber(idNumber).orElse(null);
+    }
+
+    public long getStudentsCount() {
+        // Return count of all registered students
+        return userRepository.countByRole("Student");
     }
 
 }
