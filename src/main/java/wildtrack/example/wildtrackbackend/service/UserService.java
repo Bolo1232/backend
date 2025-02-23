@@ -15,6 +15,37 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    public void updateProfilePicture(Long userId, String profilePictureUrl) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User not found"));
+
+        // If user already has a profile picture, delete the old one
+        if (user.getProfilePictureUrl() != null) {
+            String oldFileName = user.getProfilePictureUrl().substring(
+                    user.getProfilePictureUrl().lastIndexOf('/') + 1);
+            fileStorageService.deleteFile(oldFileName);
+        }
+
+        user.setProfilePictureUrl(profilePictureUrl);
+        userRepository.save(user);
+    }
+
+    public void removeProfilePicture(Long userId) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User not found"));
+
+        if (user.getProfilePictureUrl() != null) {
+            String fileName = user.getProfilePictureUrl().substring(
+                    user.getProfilePictureUrl().lastIndexOf('/') + 1);
+            fileStorageService.deleteFile(fileName);
+            user.setProfilePictureUrl(null);
+            userRepository.save(user);
+        }
+    }
+
     public void changePassword(Long id, String currentPassword, String newPassword) throws Exception {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new Exception("User not found with id: " + id));
@@ -58,6 +89,7 @@ public class UserService {
 
         existingUser.setFirstName(updatedUserDetails.getFirstName());
         existingUser.setLastName(updatedUserDetails.getLastName());
+        existingUser.setMiddleName(updatedUserDetails.getMiddleName());
 
         existingUser.setRole(updatedUserDetails.getRole());
         existingUser.setIdNumber(updatedUserDetails.getIdNumber());

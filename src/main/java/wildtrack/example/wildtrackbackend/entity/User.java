@@ -68,6 +68,29 @@ public class User {
     @Column(name = "academic_year", nullable = true)
     private String academicYear;
 
+    @Column(name = "middle_name", nullable = true)
+    private String middleName;
+
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+
+    // Add getter and setter for middle name
+    public String getMiddleName() {
+        return middleName;
+    }
+
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
+    }
+
     // Add getter and setter
     public String getAcademicYear() {
         return academicYear;

@@ -21,10 +21,13 @@ public class SecurityConfig {
                 .cors().and() // Enable CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/files/images/**", // Add this line
                                 "/api/users/register",
+
                                 "/api/**", // Registration endpoint
                                 "/api/login", // Login endpoint
                                 "/api/verify-token",
+                                "/api/users/uploads/**",
                                 "/api/library-hours/**",
                                 "/api/books/**",
                                 "/api/users/**",
