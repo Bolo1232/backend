@@ -38,6 +38,15 @@ public class BookLog {
     @Column(name = "book_title", nullable = false)
     private String bookTitle;
 
+    @Column(name = "date_logged")
+    private LocalDate dateLogged;
+
+    // ...
+
+    public LocalDate getDateLogged() {
+        return dateLogged;
+    }
+
     // Getter and Setter for bookTitle
     public String getBookTitle() {
         return bookTitle;

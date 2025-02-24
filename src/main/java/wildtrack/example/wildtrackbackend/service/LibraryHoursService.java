@@ -31,6 +31,36 @@ public class LibraryHoursService {
     @Autowired
     private UserRepository userRepository;
 
+    public List<Map<String, Object>> getTotalMinutesSpentByUser(String idNumber) {
+        List<LibraryHours> libraryHoursList = libraryHoursRepository.findByIdNumber(idNumber);
+
+        Map<String, Integer> minutesSpentByMonth = new HashMap<>();
+
+        for (LibraryHours libraryHours : libraryHoursList) {
+            LocalDateTime dateTime = libraryHours.getTimeIn();
+            String monthYear = dateTime.format(DateTimeFormatter.ofPattern("MMM yyyy"));
+
+            LocalDateTime timeIn = libraryHours.getTimeIn();
+            LocalDateTime timeOut = libraryHours.getTimeOut();
+
+            if (timeIn != null && timeOut != null) {
+                int minutesSpent = (int) Duration.between(timeIn, timeOut).toMinutes();
+                minutesSpentByMonth.put(monthYear, minutesSpentByMonth.getOrDefault(monthYear, 0) + minutesSpent);
+            }
+        }
+
+        List<Map<String, Object>> minutesSpentData = new ArrayList<>();
+
+        for (Map.Entry<String, Integer> entry : minutesSpentByMonth.entrySet()) {
+            Map<String, Object> dataPoint = new HashMap<>();
+            dataPoint.put("month", entry.getKey());
+            dataPoint.put("minutesSpent", entry.getValue());
+            minutesSpentData.add(dataPoint);
+        }
+
+        return minutesSpentData;
+    }
+
     public List<StudentLibrarySummary> getLibraryHoursSummary() {
         List<User> users = userRepository.findAll();
         List<StudentLibrarySummary> summaries = new ArrayList<>();
@@ -168,37 +198,34 @@ public class LibraryHoursService {
         // Fetch the latest record by ID Number
         LibraryHours libraryHours = libraryHoursRepository.findLatestByIdNumber(idNumber)
                 .orElseThrow(() -> new RuntimeException("No record found for the provided ID number."));
-    
+
         // Update the entity `LibraryHours` with the new data
         if (summaryUpdate.getLatestLibraryHourDate() != null && !summaryUpdate.getLatestLibraryHourDate().isEmpty()) {
             LocalDateTime newTimeIn = LocalDateTime.parse(
-                summaryUpdate.getLatestLibraryHourDate() + "T" + libraryHours.getTimeIn().toLocalTime().toString()
-            );
+                    summaryUpdate.getLatestLibraryHourDate() + "T" + libraryHours.getTimeIn().toLocalTime().toString());
             libraryHours.setTimeIn(newTimeIn);
         }
-    
+
         if (summaryUpdate.getLatestTimeIn() != null && !summaryUpdate.getLatestTimeIn().isEmpty()) {
             libraryHours.setTimeIn(LocalDateTime.parse(
-                libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeIn(),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-            ));
+                    libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeIn(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
         }
-    
+
         if (summaryUpdate.getLatestTimeOut() != null && !summaryUpdate.getLatestTimeOut().isEmpty()) {
             libraryHours.setTimeOut(LocalDateTime.parse(
-                libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeOut(),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-            ));
+                    libraryHours.getTimeIn().toLocalDate() + "T" + summaryUpdate.getLatestTimeOut(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")));
         }
-    
+
         // Save the updated entity
         libraryHoursRepository.save(libraryHours);
-    
+
         // Calculate total minutes and update the DTO
         long completedMinutes = libraryHours.getTimeIn() != null && libraryHours.getTimeOut() != null
                 ? Duration.between(libraryHours.getTimeIn(), libraryHours.getTimeOut()).toMinutes()
                 : 0;
-    
+
         StudentLibrarySummary updatedSummary = new StudentLibrarySummary();
         updatedSummary.setIdNumber(idNumber);
         updatedSummary.setLatestLibraryHourDate(libraryHours.getTimeIn().toLocalDate().toString());
@@ -207,8 +234,8 @@ public class LibraryHoursService {
                 ? libraryHours.getTimeOut().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
                 : null);
         updatedSummary.setTotalMinutes(String.valueOf(completedMinutes));
-    
+
         return updatedSummary;
     }
-    
+
 }
