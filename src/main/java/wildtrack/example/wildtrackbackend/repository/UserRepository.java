@@ -25,4 +25,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByQuarterAndSubject(String quarter, String subject);
 
+    List<User> findByGrade(String grade);
+
 }
