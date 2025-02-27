@@ -214,4 +214,20 @@ public class User {
     public void setSection(String section) {
         this.section = section;
     }
+
+    public String getFullName() {
+        StringBuilder fullName = new StringBuilder(firstName);
+
+        // Add middle initial if middle name exists
+        if (middleName != null && !middleName.isEmpty()) {
+            fullName.append(" ")
+                    .append(middleName.charAt(0))
+                    .append(".");
+        }
+
+        // Add last name
+        fullName.append(" ").append(lastName);
+
+        return fullName.toString();
+    }
 }

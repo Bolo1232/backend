@@ -20,24 +20,30 @@ public class SetLibraryHours {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private Integer minutes;
-    private Integer gradeLevel;
+
+    private String gradeLevel;
+
     private String subject;
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Quarter quarter;
-    
+
     private LocalDate deadline;
-    
+
+    // New field for approval status
+    @Column(nullable = false)
+    private String approvalStatus = "PENDING"; // PENDING, APPROVED, REJECTED
+
     // Fields to handle date input
     @Transient
     private Integer month;
-    
+
     @Transient
     private Integer day;
-    
+
     @Transient
     private Integer year;
 
@@ -82,7 +88,7 @@ public class SetLibraryHours {
         return minutes;
     }
 
-    public Integer getGradeLevel() {
+    public String getGradeLevel() {
         return gradeLevel;
     }
 
@@ -97,17 +103,21 @@ public class SetLibraryHours {
     public LocalDate getDeadline() {
         return deadline;
     }
-    
+
     public Integer getMonth() {
         return month;
     }
-    
+
     public Integer getDay() {
         return day;
     }
-    
+
     public Integer getYear() {
         return year;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
     }
 
     // Setters
@@ -119,7 +129,7 @@ public class SetLibraryHours {
         this.minutes = minutes;
     }
 
-    public void setGradeLevel(Integer gradeLevel) {
+    public void setGradeLevel(String gradeLevel) {
         this.gradeLevel = gradeLevel;
     }
 
@@ -139,19 +149,23 @@ public class SetLibraryHours {
     public void setDeadline(LocalDate deadline) {
         this.deadline = deadline;
     }
-    
+
     public void setMonth(Integer month) {
         this.month = month;
     }
-    
+
     public void setDay(Integer day) {
         this.day = day;
     }
-    
+
     public void setYear(Integer year) {
         this.year = year;
     }
-    
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
     // Method to construct deadline from month, day, year
     @PrePersist
     @PreUpdate
@@ -166,10 +180,11 @@ public class SetLibraryHours {
         return "SetLibraryHours{" +
                 "id=" + id +
                 ", minutes=" + minutes +
-                ", gradeLevel=" + gradeLevel +
+                ", gradeLevel='" + gradeLevel + '\'' +
                 ", subject='" + subject + '\'' +
                 ", quarter=" + quarter.getValue() +
                 ", deadline=" + deadline +
+                ", approvalStatus='" + approvalStatus + '\'' +
                 '}';
     }
 }

@@ -19,6 +19,57 @@ public class LibraryHours {
     @Column(name = "book_title")
     private String bookTitle;
 
+    @Column(name = "subject", nullable = true)
+    private String subject;
+
+    // Field declaration
+    @Column(name = "minutes_counted")
+    private Integer minutesCounted;
+
+    // Field declarations
+    @Column(name = "requirement_id")
+    private Long requirementId;
+
+    @Column(name = "is_counted", nullable = false)
+    private Boolean isCounted = false;
+
+    // Getter and setter for requirementId
+    public Long getRequirementId() {
+        return requirementId;
+    }
+
+    public void setRequirementId(Long requirementId) {
+        this.requirementId = requirementId;
+    }
+
+    // Getter and setter for isCounted
+    public Boolean getIsCounted() {
+        return isCounted;
+    }
+
+    public void setIsCounted(Boolean isCounted) {
+        this.isCounted = isCounted;
+    }
+
+    // Getter method
+    public Integer getMinutesCounted() {
+        return minutesCounted;
+    }
+
+    // Setter method
+    public void setMinutesCounted(Integer minutesCounted) {
+        this.minutesCounted = minutesCounted;
+    }
+
+    // Add getter and setter
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
     public String getBookTitle() {
         return bookTitle;
     }
@@ -61,4 +112,5 @@ public class LibraryHours {
     public void setTimeOut(LocalDateTime timeOut) {
         this.timeOut = timeOut;
     }
+
 }
