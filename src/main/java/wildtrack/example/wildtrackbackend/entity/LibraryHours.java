@@ -33,6 +33,18 @@ public class LibraryHours {
     @Column(name = "is_counted", nullable = false)
     private Boolean isCounted = false;
 
+    @Column(name = "academic_year")
+    private String academicYear;
+
+    // Add getter and setter
+    public String getAcademicYear() {
+        return academicYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+    }
+
     // Getter and setter for requirementId
     public Long getRequirementId() {
         return requirementId;

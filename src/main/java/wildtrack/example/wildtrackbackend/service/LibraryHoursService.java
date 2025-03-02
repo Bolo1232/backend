@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,8 +32,38 @@ public class LibraryHoursService {
     @Autowired
     private UserRepository userRepository;
 
-    public List<Map<String, Object>> getTotalMinutesSpentByUser(String idNumber) {
+    public List<Map<String, Object>> getTotalMinutesSpentByUser(
+            String idNumber, String dateFrom, String dateTo, String academicYear) {
+
         List<LibraryHours> libraryHoursList = libraryHoursRepository.findByIdNumber(idNumber);
+
+        // Apply filters if provided
+        if (dateFrom != null || dateTo != null || academicYear != null) {
+            LocalDateTime fromDateTime = dateFrom != null ? LocalDate.parse(dateFrom).atStartOfDay() : null;
+            LocalDateTime toDateTime = dateTo != null ? LocalDate.parse(dateTo).atTime(23, 59, 59) : null;
+
+            libraryHoursList = libraryHoursList.stream()
+                    .filter(hours -> {
+                        boolean includeHours = true;
+
+                        // Filter by date range
+                        if (fromDateTime != null && hours.getTimeIn().isBefore(fromDateTime)) {
+                            includeHours = false;
+                        }
+                        if (toDateTime != null && hours.getTimeIn().isAfter(toDateTime)) {
+                            includeHours = false;
+                        }
+
+                        // Filter by academic year if provided
+                        if (academicYear != null && !academicYear.isEmpty() &&
+                                !academicYear.equals(hours.getAcademicYear())) {
+                            includeHours = false;
+                        }
+
+                        return includeHours;
+                    })
+                    .collect(Collectors.toList());
+        }
 
         Map<String, Integer> minutesSpentByMonth = new HashMap<>();
 
