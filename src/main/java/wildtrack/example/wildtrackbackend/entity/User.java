@@ -74,6 +74,29 @@ public class User {
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
 
+    @Column(name = "position", nullable = true)
+    private String position;
+
+    @Column(name = "department", nullable = true)
+    private String department;
+
+    // Add getters and setters
+    public String getPosition() {
+        return position;
+    }
+
+    public void setPosition(String position) {
+        this.position = position;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
     public String getProfilePictureUrl() {
         return profilePictureUrl;
     }
