@@ -51,6 +51,26 @@ public class BookLogService {
             LocalDate fromDate = dateFrom != null ? LocalDate.parse(dateFrom) : null;
             LocalDate toDate = dateTo != null ? LocalDate.parse(dateTo) : null;
 
+            // Parse academic year if provided (format: "2025-2026")
+            Integer academicYearStart = null;
+            Integer academicYearEnd = null;
+
+            if (academicYear != null && !academicYear.isEmpty()) {
+                String[] years = academicYear.split("-");
+                if (years.length == 2) {
+                    try {
+                        academicYearStart = Integer.parseInt(years[0]);
+                        academicYearEnd = Integer.parseInt(years[1]);
+                    } catch (NumberFormatException e) {
+                        // Invalid format, ignore academic year filter
+                        System.err.println("Invalid academic year format: " + academicYear);
+                    }
+                }
+            }
+
+            final Integer startYear = academicYearStart;
+            final Integer endYear = academicYearEnd;
+
             bookLogList = bookLogList.stream()
                     .filter(log -> {
                         boolean includeLog = true;
@@ -63,10 +83,12 @@ public class BookLogService {
                             includeLog = false;
                         }
 
-                        // Filter by academic year if provided
-                        if (academicYear != null && !academicYear.isEmpty() &&
-                                !academicYear.equals(log.getAcademicYear())) {
-                            includeLog = false;
+                        // Filter by academic year years if provided
+                        if (startYear != null && endYear != null) {
+                            int logYear = log.getDateRead().getYear();
+                            if (logYear != startYear && logYear != endYear) {
+                                includeLog = false;
+                            }
                         }
 
                         return includeLog;
@@ -133,6 +155,26 @@ public class BookLogService {
             LocalDate fromDate = dateFrom != null ? LocalDate.parse(dateFrom) : null;
             LocalDate toDate = dateTo != null ? LocalDate.parse(dateTo) : null;
 
+            // Parse academic year if provided (format: "2025-2026")
+            Integer academicYearStart = null;
+            Integer academicYearEnd = null;
+
+            if (academicYear != null && !academicYear.isEmpty()) {
+                String[] years = academicYear.split("-");
+                if (years.length == 2) {
+                    try {
+                        academicYearStart = Integer.parseInt(years[0]);
+                        academicYearEnd = Integer.parseInt(years[1]);
+                    } catch (NumberFormatException e) {
+                        // Invalid format, ignore academic year filter
+                        System.err.println("Invalid academic year format: " + academicYear);
+                    }
+                }
+            }
+
+            final Integer startYear = academicYearStart;
+            final Integer endYear = academicYearEnd;
+
             userBookLogs = userBookLogs.stream()
                     .filter(log -> {
                         boolean includeLog = true;
@@ -145,10 +187,12 @@ public class BookLogService {
                             includeLog = false;
                         }
 
-                        // Filter by academic year if provided
-                        if (academicYear != null && !academicYear.isEmpty() &&
-                                !academicYear.equals(log.getAcademicYear())) {
-                            includeLog = false;
+                        // Filter by academic year years if provided
+                        if (startYear != null && endYear != null) {
+                            int logYear = log.getDateRead().getYear();
+                            if (logYear != startYear && logYear != endYear) {
+                                includeLog = false;
+                            }
                         }
 
                         return includeLog;
@@ -193,6 +237,26 @@ public class BookLogService {
             LocalDate fromDate = dateFrom != null ? LocalDate.parse(dateFrom) : null;
             LocalDate toDate = dateTo != null ? LocalDate.parse(dateTo) : null;
 
+            // Parse academic year if provided (format: "2025-2026")
+            Integer academicYearStart = null;
+            Integer academicYearEnd = null;
+
+            if (academicYear != null && !academicYear.isEmpty()) {
+                String[] years = academicYear.split("-");
+                if (years.length == 2) {
+                    try {
+                        academicYearStart = Integer.parseInt(years[0]);
+                        academicYearEnd = Integer.parseInt(years[1]);
+                    } catch (NumberFormatException e) {
+                        // Invalid format, ignore academic year filter
+                        System.err.println("Invalid academic year format: " + academicYear);
+                    }
+                }
+            }
+
+            final Integer startYear = academicYearStart;
+            final Integer endYear = academicYearEnd;
+
             userBookLogs = userBookLogs.stream()
                     .filter(log -> {
                         boolean includeLog = true;
@@ -205,10 +269,12 @@ public class BookLogService {
                             includeLog = false;
                         }
 
-                        // Filter by academic year if provided
-                        if (academicYear != null && !academicYear.isEmpty() &&
-                                !academicYear.equals(log.getAcademicYear())) {
-                            includeLog = false;
+                        // Filter by academic year years if provided
+                        if (startYear != null && endYear != null) {
+                            int logYear = log.getDateRead().getYear();
+                            if (logYear != startYear && logYear != endYear) {
+                                includeLog = false;
+                            }
                         }
 
                         return includeLog;

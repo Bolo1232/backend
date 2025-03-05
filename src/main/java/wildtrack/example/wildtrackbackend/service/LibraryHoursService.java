@@ -42,6 +42,26 @@ public class LibraryHoursService {
             LocalDateTime fromDateTime = dateFrom != null ? LocalDate.parse(dateFrom).atStartOfDay() : null;
             LocalDateTime toDateTime = dateTo != null ? LocalDate.parse(dateTo).atTime(23, 59, 59) : null;
 
+            // Parse academic year if provided (format: "2025-2026")
+            Integer academicYearStart = null;
+            Integer academicYearEnd = null;
+
+            if (academicYear != null && !academicYear.isEmpty()) {
+                String[] years = academicYear.split("-");
+                if (years.length == 2) {
+                    try {
+                        academicYearStart = Integer.parseInt(years[0]);
+                        academicYearEnd = Integer.parseInt(years[1]);
+                    } catch (NumberFormatException e) {
+                        // Invalid format, ignore academic year filter
+                        System.err.println("Invalid academic year format: " + academicYear);
+                    }
+                }
+            }
+
+            final Integer startYear = academicYearStart;
+            final Integer endYear = academicYearEnd;
+
             libraryHoursList = libraryHoursList.stream()
                     .filter(hours -> {
                         boolean includeHours = true;
@@ -54,10 +74,12 @@ public class LibraryHoursService {
                             includeHours = false;
                         }
 
-                        // Filter by academic year if provided
-                        if (academicYear != null && !academicYear.isEmpty() &&
-                                !academicYear.equals(hours.getAcademicYear())) {
-                            includeHours = false;
+                        // Filter by academic year years if provided
+                        if (startYear != null && endYear != null) {
+                            int logYear = hours.getTimeIn().getYear();
+                            if (logYear != startYear && logYear != endYear) {
+                                includeHours = false;
+                            }
                         }
 
                         return includeHours;
@@ -268,5 +290,4 @@ public class LibraryHoursService {
 
         return updatedSummary;
     }
-
 }

@@ -101,6 +101,10 @@ public class UserService {
         existingUser.setAssignedTask(updatedUserDetails.getAssignedTask());
         existingUser.setAcademicYear(updatedUserDetails.getAcademicYear());
 
+        // Add position and department updates
+        existingUser.setPosition(updatedUserDetails.getPosition());
+        existingUser.setDepartment(updatedUserDetails.getDepartment());
+
         return userRepository.save(existingUser);
     }
 
@@ -120,5 +124,4 @@ public class UserService {
         // Return count of all registered students
         return userRepository.countByRole("Student");
     }
-
 }
