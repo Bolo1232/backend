@@ -16,6 +16,13 @@ public interface LibraryRequirementProgressRepository extends JpaRepository<Libr
     // Find by student and subject
     List<LibraryRequirementProgress> findByStudentIdAndSubject(String studentId, String subject);
 
+    // Find by student and quarter
+    List<LibraryRequirementProgress> findByStudentIdAndQuarter(String studentId, String quarter);
+
+    // Find by student, subject and quarter
+    List<LibraryRequirementProgress> findByStudentIdAndSubjectAndQuarter(String studentId, String subject,
+            String quarter);
+
     // Count by student ID
     long countByStudentId(String studentId);
 
@@ -28,12 +35,26 @@ public interface LibraryRequirementProgressRepository extends JpaRepository<Libr
     // Find progress for a specific requirement and student
     Optional<LibraryRequirementProgress> findByStudentIdAndRequirementId(String studentId, Long requirementId);
 
-    // Find by student, subject and quarter
-    Optional<LibraryRequirementProgress> findByStudentIdAndSubjectAndQuarter(String studentId, String subject,
-            String quarter);
-
     // Find all requirements for a specific grade level and subject
     List<LibraryRequirementProgress> findByGradeLevelAndSubject(String gradeLevel, String subject);
+
+    // Find all completed requirements
+    List<LibraryRequirementProgress> findByIsCompletedTrue();
+
+    // Find all completed requirements by subject
+    List<LibraryRequirementProgress> findBySubjectAndIsCompletedTrue(String subject);
+
+    // Find all completed requirements by quarter
+    List<LibraryRequirementProgress> findByQuarterAndIsCompletedTrue(String quarter);
+
+    // Find all completed requirements by subject and quarter
+    List<LibraryRequirementProgress> findBySubjectAndQuarterAndIsCompletedTrue(String subject, String quarter);
+
+    // Find all completed requirements within a date range
+    List<LibraryRequirementProgress> findByIsCompletedTrueAndLastUpdatedBetween(LocalDate startDate, LocalDate endDate);
+
+    // Find all completed requirements by academic year
+    List<LibraryRequirementProgress> findByAcademicYearAndIsCompletedTrue(String academicYear);
 
     // Count completed requirements for a student
     @Query("SELECT COUNT(p) FROM LibraryRequirementProgress p WHERE p.studentId = ?1 AND p.isCompleted = true")
@@ -60,4 +81,8 @@ public interface LibraryRequirementProgressRepository extends JpaRepository<Libr
 
     // Count completed requirements by last updated date range
     long countByIsCompletedTrueAndLastUpdatedBetween(LocalDate start, LocalDate end);
+
+    long countByLastUpdatedBetweenAndSubject(LocalDate start, LocalDate end, String subject);
+
+    long countByIsCompletedTrueAndLastUpdatedBetweenAndSubject(LocalDate start, LocalDate end, String subject);
 }

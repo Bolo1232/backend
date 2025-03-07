@@ -41,9 +41,14 @@ public class LibraryRequirementProgress {
     @Column(name = "last_updated")
     private LocalDate lastUpdated;
 
+    // Add academic year field
+    @Column(name = "academic_year")
+    private String academicYear;
+
     // Default constructor
     public LibraryRequirementProgress() {
         this.lastUpdated = LocalDate.now();
+        setAcademicYearFromQuarter();
     }
 
     // Constructors with fields
@@ -60,6 +65,20 @@ public class LibraryRequirementProgress {
         this.deadline = deadline;
         this.isCompleted = false;
         this.lastUpdated = LocalDate.now();
+        setAcademicYearFromQuarter();
+    }
+
+    // Method to determine academic year based on quarter
+    private void setAcademicYearFromQuarter() {
+        if (this.quarter == null)
+            return;
+
+        int currentYear = LocalDate.now().getYear();
+        if (this.quarter.equals("First") || this.quarter.equals("Second")) {
+            this.academicYear = currentYear + "-" + (currentYear + 1);
+        } else {
+            this.academicYear = (currentYear - 1) + "-" + currentYear;
+        }
     }
 
     // Add minutes rendered and automatically complete if threshold is met
@@ -136,6 +155,7 @@ public class LibraryRequirementProgress {
 
     public void setQuarter(String quarter) {
         this.quarter = quarter;
+        setAcademicYearFromQuarter();
     }
 
     public String getGradeLevel() {
@@ -191,5 +211,13 @@ public class LibraryRequirementProgress {
 
     public void setLastUpdated(LocalDate lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public String getAcademicYear() {
+        return academicYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
     }
 }

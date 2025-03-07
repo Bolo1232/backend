@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRole(String role); // Fetch users by their role (e.g., "Student")
 
+    List<User> findByRoleAndGrade(String role, String grade); // Fetch users by role and grade
+
     List<User> findByQuarter(String quarter); // Fetch teachers by quarter
 
     List<User> findBySubject(String subject); // Fetch teachers by subject
@@ -26,5 +28,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByQuarterAndSubject(String quarter, String subject);
 
     List<User> findByGrade(String grade);
+
+    // New methods for filtering
+    List<User> findBySection(String section); // Fetch students by section
+
+    List<User> findByGradeAndSection(String grade, String section); // Fetch students by grade and section
+
+    // Find users by grade and role
+    List<User> findByGradeAndRole(String grade, String role);
 
 }
