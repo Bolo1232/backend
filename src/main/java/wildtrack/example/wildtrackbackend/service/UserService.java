@@ -65,6 +65,47 @@ public class UserService {
         return userRepository.findByRole(role); // Fetch users filtered by role
     }
 
+    /**
+     * Returns a filtered list of students based on grade level and section
+     * 
+     * @param gradeLevel The grade level to filter by, or null for all grades
+     * @param section    The section to filter by, or null for all sections
+     * @return Filtered list of students
+     */
+    public List<User> getStudentsByGradeAndSection(String gradeLevel, String section) {
+        List<User> allStudents = userRepository.findByRole("Student");
+
+        // Apply filters if provided
+        return allStudents.stream()
+                .filter(student -> (gradeLevel == null || gradeLevel.isEmpty() || gradeLevel.equals(student.getGrade()))
+                        &&
+                        (section == null || section.isEmpty() || section.equals(student.getSection())))
+                .toList();
+    }
+
+    /**
+     * Returns the count of students based on grade level and section
+     * 
+     * @param gradeLevel The grade level to filter by, or null for all grades
+     * @param section    The section to filter by, or null for all sections
+     * @return Number of students matching the criteria
+     */
+    public long getStudentsCountByGradeAndSection(String gradeLevel, String section) {
+        List<User> allStudents = userRepository.findByRole("Student");
+
+        // If no filters, return all students
+        if ((gradeLevel == null || gradeLevel.isEmpty()) && (section == null || section.isEmpty())) {
+            return allStudents.size();
+        }
+
+        // Apply filters
+        return allStudents.stream()
+                .filter(student -> (gradeLevel == null || gradeLevel.isEmpty() || gradeLevel.equals(student.getGrade()))
+                        &&
+                        (section == null || section.isEmpty() || section.equals(student.getSection())))
+                .count();
+    }
+
     public boolean isEmailExists(String email) {
         return userRepository.existsByEmail(email); // This must return true if the email exists
     }

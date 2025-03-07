@@ -52,4 +52,14 @@ public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
+    long countByIdNumberInAndTimeOutIsNotNullAndTimeInBetween(
+            List<String> idNumbers, LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query("SELECT COUNT(DISTINCT h.idNumber) FROM LibraryHours h WHERE h.timeOut IS NOT NULL AND h.timeIn BETWEEN ?1 AND ?2")
+    long countDistinctUsersByTimeInBetween(LocalDateTime startTime, LocalDateTime endTime);
+
+    @Query("SELECT COUNT(DISTINCT h.idNumber) FROM LibraryHours h WHERE h.idNumber IN ?1 AND h.timeOut IS NOT NULL AND h.timeIn BETWEEN ?2 AND ?3")
+    long countDistinctUsersByIdNumberInAndTimeInBetween(List<String> idNumbers, LocalDateTime startTime,
+            LocalDateTime endTime);
+
 }
