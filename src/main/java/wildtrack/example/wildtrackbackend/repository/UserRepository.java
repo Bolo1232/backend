@@ -36,5 +36,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Find users by grade and role
     List<User> findByGradeAndRole(String grade, String role);
-
 }

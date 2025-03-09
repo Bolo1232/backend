@@ -52,7 +52,7 @@ public class NotificationController {
                         .body(Map.of("error", "User not found with ID number: " + idNumber));
             }
 
-            Long unreadCount = notificationService.getUnreadCount(user.getId(), user.getGrade());
+            Long unreadCount = notificationService.getUnreadCount(user.getId()); // Remove the second parameter
             return ResponseEntity.ok(Map.of("unreadCount", unreadCount));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -73,6 +73,7 @@ public class NotificationController {
     }
 
     // Mark all notifications as read for a user
+    // In NotificationController.java
     @PutMapping("/mark-all-read/{idNumber}")
     public ResponseEntity<?> markAllAsRead(@PathVariable String idNumber) {
         try {
@@ -82,11 +83,23 @@ public class NotificationController {
                         .body(Map.of("error", "User not found with ID number: " + idNumber));
             }
 
-            notificationService.markAllAsRead(user.getId(), user.getGrade());
+            notificationService.markAllAsRead(user.getId()); // Remove the second parameter
             return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error marking all notifications as read: " + e.getMessage()));
+        }
+    }
+
+    // Delete notification
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<?> deleteNotification(@PathVariable Long notificationId) {
+        try {
+            notificationService.deleteNotification(notificationId);
+            return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error deleting notification: " + e.getMessage()));
         }
     }
 }
