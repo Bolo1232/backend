@@ -22,8 +22,8 @@ public class NotificationService {
     @Autowired
     private UserRepository userRepository;
 
-    // Create a notification for a library hours deadline
-    public Notification createLibraryHoursNotification(SetLibraryHours libraryHours) {
+    // Create notifications for an approved library hours requirement
+    public List<Notification> createLibraryHoursNotification(SetLibraryHours libraryHours) {
         // Only create notifications for approved library hours
         if (!"APPROVED".equals(libraryHours.getApprovalStatus())) {
             return null;
@@ -40,11 +40,81 @@ public class NotificationService {
                 formattedDate,
                 libraryHours.getQuarter().getValue());
 
-        Notification notification = new Notification(
+        // Find all students in the specified grade level
+        List<User> studentsInGrade = userRepository.findByRoleAndGrade("Student", libraryHours.getGradeLevel());
+
+        // Create individual notifications for each student
+        for (User student : studentsInGrade) {
+            Notification notification = new Notification(
+                    student.getId(), // Individual student ID
+                    title,
+                    message,
+                    "LIBRARY_HOURS",
+                    libraryHours.getId());
+
+            notificationRepository.save(notification);
+        }
+
+        // Also create a notification for the teacher who created the requirement
+        if (libraryHours.getCreatedById() != null) {
+            String teacherMessage = String.format(
+                    "Your library hours requirement for %s: %d minutes of %s reading due by %s (Quarter %s) has been approved.",
+                    libraryHours.getGradeLevel(),
+                    libraryHours.getMinutes(),
+                    libraryHours.getSubject(),
+                    formattedDate,
+                    libraryHours.getQuarter().getValue());
+
+            Notification teacherNotification = new Notification(
+                    libraryHours.getCreatedById(),
+                    "Library Hours Requirement Approved",
+                    teacherMessage,
+                    "LIBRARY_HOURS_APPROVED",
+                    libraryHours.getId());
+
+            notificationRepository.save(teacherNotification);
+        }
+
+        // Return all created notifications
+        return notificationRepository.findByReferenceId(libraryHours.getId());
+    }
+
+    // Create notification when library hours are rejected
+    public Notification createLibraryHoursRejectionNotification(SetLibraryHours libraryHours, String reason) {
+        // Find the teacher who created the library hours
+        Long createdById = libraryHours.getCreatedById();
+        String formattedDate = libraryHours.getDeadline().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
+
+        if (createdById == null) {
+            // If we don't have a specific teacher ID, notify all teachers
+            return createTeacherNotification(
+                    "Library Hours Requirement Rejected",
+                    String.format(
+                            "The library hours requirement for %s: %d minutes of %s reading due by %s (Quarter %s) was rejected. Reason: %s",
+                            libraryHours.getGradeLevel(),
+                            libraryHours.getMinutes(),
+                            libraryHours.getSubject(),
+                            formattedDate,
+                            libraryHours.getQuarter().getValue(),
+                            reason));
+        }
+
+        // Create a notification for the specific teacher
+        String title = "Library Hours Requirement Rejected";
+        String message = String.format(
+                "Your library hours requirement for %s: %d minutes of %s reading due by %s (Quarter %s) was rejected.\n\nReason: %s",
                 libraryHours.getGradeLevel(),
+                libraryHours.getMinutes(),
+                libraryHours.getSubject(),
+                formattedDate,
+                libraryHours.getQuarter().getValue(),
+                reason);
+
+        Notification notification = new Notification(
+                createdById,
                 title,
                 message,
-                "LIBRARY_HOURS",
+                "LIBRARY_HOURS_REJECTED",
                 libraryHours.getId());
 
         return notificationRepository.save(notification);
@@ -112,13 +182,8 @@ public class NotificationService {
 
     // Get notifications for a specific user
     public List<Notification> getUserNotifications(Long userId) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            return notificationRepository.findByUserIdOrGradeLevel(userId, user.getGrade());
-        } else {
-            return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        }
+        // Only get notifications specifically for this user ID
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     // Get notifications for a user by ID number
@@ -126,7 +191,7 @@ public class NotificationService {
         Optional<User> userOpt = userRepository.findByIdNumber(idNumber);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            return notificationRepository.findByUserIdOrGradeLevel(user.getId(), user.getGrade());
+            return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         }
         return List.of(); // Return empty list if user not found
     }
@@ -143,15 +208,15 @@ public class NotificationService {
     }
 
     // Mark all notifications as read for a user
-    public void markAllAsRead(Long userId, String gradeLevel) {
-        List<Notification> notifications = notificationRepository.findByUserIdOrGradeLevel(userId, gradeLevel);
+    public void markAllAsRead(Long userId) { // removed unused gradeLevel parameter
+        List<Notification> notifications = notificationRepository.findByUserId(userId);
         notifications.forEach(notification -> notification.setRead(true));
         notificationRepository.saveAll(notifications);
     }
 
     // Get unread notification count
-    public Long getUnreadCount(Long userId, String gradeLevel) {
-        return notificationRepository.countUnreadNotifications(userId, gradeLevel);
+    public Long getUnreadCount(Long userId) { // removed unused gradeLevel parameter
+        return notificationRepository.countByUserIdAndIsReadFalse(userId); // Fixed method name
     }
 
     // Create notification for individual user
@@ -159,5 +224,15 @@ public class NotificationService {
             Long referenceId) {
         Notification notification = new Notification(userId, title, message, type, referenceId);
         return notificationRepository.save(notification);
+    }
+
+    // Delete notification
+    public void deleteNotification(Long notificationId) {
+        Optional<Notification> notificationOpt = notificationRepository.findById(notificationId);
+        if (notificationOpt.isPresent()) {
+            notificationRepository.deleteById(notificationId);
+        } else {
+            throw new RuntimeException("Notification not found with ID: " + notificationId);
+        }
     }
 }

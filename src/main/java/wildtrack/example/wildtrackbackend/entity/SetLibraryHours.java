@@ -33,7 +33,7 @@ public class SetLibraryHours {
 
     private LocalDate deadline;
 
-    // New field for approval status
+    // Approval status field
     @Column(nullable = false)
     private String approvalStatus = "PENDING"; // PENDING, APPROVED, REJECTED
 
@@ -46,6 +46,13 @@ public class SetLibraryHours {
 
     @Transient
     private Integer year;
+
+    // Fields for tracking creator and rejection reasons
+    @Column
+    private Long createdById;
+
+    @Column(length = 500)
+    private String rejectionReason;
 
     // Enum for Quarter with better JSON serialization
     public enum Quarter {
@@ -120,6 +127,14 @@ public class SetLibraryHours {
         return approvalStatus;
     }
 
+    public Long getCreatedById() {
+        return createdById;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -141,7 +156,6 @@ public class SetLibraryHours {
         this.quarter = quarter;
     }
 
-    // Additional method to handle string-based quarter setting
     public void setQuarter(String quarterStr) {
         this.quarter = Quarter.fromString(quarterStr);
     }
@@ -166,6 +180,14 @@ public class SetLibraryHours {
         this.approvalStatus = approvalStatus;
     }
 
+    public void setCreatedById(Long createdById) {
+        this.createdById = createdById;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
     // Method to construct deadline from month, day, year
     @PrePersist
     @PreUpdate
@@ -185,6 +207,8 @@ public class SetLibraryHours {
                 ", quarter=" + quarter.getValue() +
                 ", deadline=" + deadline +
                 ", approvalStatus='" + approvalStatus + '\'' +
+                ", createdById=" + createdById +
+                ", rejectionReason='" + (rejectionReason != null ? rejectionReason : "none") + '\'' +
                 '}';
     }
 }

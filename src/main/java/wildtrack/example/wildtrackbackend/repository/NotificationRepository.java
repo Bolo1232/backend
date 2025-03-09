@@ -13,11 +13,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // Find notifications for specific user
     List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    // Find notifications by userId
+    List<Notification> findByUserId(Long userId);
+
+    // Find notifications by reference ID
+    List<Notification> findByReferenceId(Long referenceId);
+
     // Find notifications for a specific grade level
     List<Notification> findByGradeLevelOrderByCreatedAtDesc(String gradeLevel);
 
     // Find unread notifications for a specific user
     List<Notification> findByUserIdAndIsReadFalseOrderByCreatedAtDesc(Long userId);
+
+    // Count unread notifications for a specific user
+    Long countByUserIdAndIsReadFalse(Long userId);
 
     // Find notifications that are either for a specific user or for their grade
     // level
