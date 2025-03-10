@@ -15,8 +15,17 @@ public class ReportService {
     @Autowired
     private ReportRepository reportRepository;
 
+    @Autowired
+    private ReportNotificationService reportNotificationService;
+
     public Report saveReport(Report report) {
-        return reportRepository.save(report);
+        // Save the report
+        Report savedReport = reportRepository.save(report);
+
+        // Create notification for librarians
+        reportNotificationService.createReportSubmissionNotification(savedReport);
+
+        return savedReport;
     }
 
     public List<Report> getAllReports() {
@@ -83,7 +92,12 @@ public class ReportService {
                 report.setAdminComments(adminComments);
             }
 
-            return reportRepository.save(report);
+            Report resolvedReport = reportRepository.save(report);
+
+            // Create notification for user who submitted the report
+            reportNotificationService.createReportResolutionNotification(resolvedReport);
+
+            return resolvedReport;
         }
         return null;
     }

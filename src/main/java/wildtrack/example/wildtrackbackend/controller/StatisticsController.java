@@ -14,8 +14,10 @@ import wildtrack.example.wildtrackbackend.service.TimeInService;
 import wildtrack.example.wildtrackbackend.service.UserService;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:5173")
 public class StatisticsController {
     private static final Logger logger = Logger.getLogger(StatisticsController.class.getName());
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Autowired
     private TimeInService timeInService;
@@ -76,7 +79,9 @@ public class StatisticsController {
             @RequestParam(required = false) String section,
             @RequestParam(required = false) String academicYear,
             @RequestParam(required = false) String quarter,
-            @RequestParam(required = false) String subject) {
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         try {
             logger.info("Getting active participants with filters: " +
                     "timeframe=" + timeframe +
@@ -84,7 +89,9 @@ public class StatisticsController {
                     ", section=" + section +
                     ", academicYear=" + academicYear +
                     ", quarter=" + quarter +
-                    ", subject=" + subject);
+                    ", subject=" + subject +
+                    ", dateFrom=" + dateFrom +
+                    ", dateTo=" + dateTo);
 
             // Default to monthly if timeframe not specified
             timeframe = (timeframe != null) ? timeframe.toLowerCase() : "monthly";
@@ -93,11 +100,52 @@ public class StatisticsController {
             LocalDateTime now = LocalDateTime.now();
             int currentYear = now.getYear();
 
+            // Parse date filters if provided
+            LocalDate fromDate = null;
+            LocalDate toDate = null;
+
+            // If academic year is specified (format should be like "2025-2026")
+            if (academicYear != null && !academicYear.isEmpty()) {
+                try {
+                    // Parse the academic year range
+                    String[] years = academicYear.split("-");
+                    if (years.length == 2) {
+                        int startYear = Integer.parseInt(years[0]);
+                        int endYear = Integer.parseInt(years[1]);
+
+                        // If no explicit date range is provided, set it based on academic year
+                        if (dateFrom == null || dateFrom.isEmpty()) {
+                            // Typically academic years start in August/September
+                            fromDate = LocalDate.of(startYear, Month.JULY, 1);
+                        }
+
+                        if (dateTo == null || dateTo.isEmpty()) {
+                            // Typically academic years end in May/June
+                            toDate = LocalDate.of(endYear, Month.JUNE, 30);
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Failed to parse academic year: " + academicYear);
+                    // Continue with default values if parsing fails
+                }
+            }
+
+            // Explicit date filters override academic year settings
+            if (dateFrom != null && !dateFrom.isEmpty()) {
+                fromDate = LocalDate.parse(dateFrom, DATE_FORMATTER);
+            }
+
+            if (dateTo != null && !dateTo.isEmpty()) {
+                toDate = LocalDate.parse(dateTo, DATE_FORMATTER);
+            }
+
             // Create response data
             List<Map<String, Object>> resultData = new ArrayList<>();
 
             // Apply grade level and section filters to get relevant users
-            List<User> filteredUsers = filterUsers(gradeLevel, section, academicYear);
+            // Important: We don't filter by academicYear property, only by grade and
+            // section
+            List<User> filteredUsers = filterUsers(gradeLevel, section);
             List<String> userIds = filteredUsers.stream()
                     .map(User::getIdNumber)
                     .collect(Collectors.toList());
@@ -111,9 +159,13 @@ public class StatisticsController {
                     monday = monday.minusWeeks(1);
                 }
 
-                // Create data for each day of the week
-                for (int i = 0; i < 7; i++) {
-                    LocalDate currentDay = monday.plusDays(i);
+                // Adjust date range if using date filters
+                LocalDate startDay = fromDate != null ? fromDate : monday;
+                LocalDate endDay = toDate != null ? toDate : monday.plusDays(6);
+
+                // Create data for each day in the range
+                LocalDate currentDay = startDay;
+                while (!currentDay.isAfter(endDay)) {
                     String dayName = currentDay.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
 
                     // Define time boundaries for the day
@@ -129,26 +181,71 @@ public class StatisticsController {
                     dayData.put("participants", uniqueParticipants);
 
                     resultData.add(dayData);
+                    currentDay = currentDay.plusDays(1);
                 }
             } else {
-                // For monthly data - show all months in current year
-                // Predefined list of months to ensure all months are included
+                // For monthly data
+                if (fromDate == null && toDate == null) {
+                    // If no date filters and no academic year, default to current year
+                    fromDate = LocalDate.of(currentYear, 1, 1);
+                    toDate = LocalDate.of(currentYear, 12, 31);
+                }
+
+                // Ensure we have both dates
+                LocalDate startDate = fromDate != null ? fromDate : LocalDate.of(currentYear, 1, 1);
+                LocalDate endDate = toDate != null ? toDate : LocalDate.of(currentYear, 12, 31);
+
+                // Predefined list of months
                 String[] months = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                         "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
 
-                for (int month = 1; month <= 12; month++) {
-                    LocalDateTime startOfMonth = LocalDateTime.of(currentYear, month, 1, 0, 0);
-                    LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
+                // Create a range of year-month combinations to iterate through
+                YearMonth start = YearMonth.from(startDate);
+                YearMonth end = YearMonth.from(endDate);
+
+                YearMonth current = start;
+                while (!current.isAfter(end)) {
+                    int year = current.getYear();
+                    int month = current.getMonthValue();
+
+                    // Get start and end of month
+                    LocalDateTime startOfMonth = LocalDateTime.of(year, month, 1, 0, 0);
+                    LocalDateTime endOfMonth = current.atEndOfMonth().atTime(23, 59, 59);
+
+                    // Create adjusted time bounds that respect the specific date range
+                    LocalDateTime adjustedStartTime = startOfMonth;
+                    LocalDateTime adjustedEndTime = endOfMonth;
+
+                    // If fromDate is provided and is in this month, use it as the start
+                    if (fromDate != null && fromDate.getYear() == year && fromDate.getMonthValue() == month) {
+                        adjustedStartTime = fromDate.atStartOfDay();
+                    }
+
+                    // If dateTo is provided and is in this month, use it as the end
+                    if (toDate != null && toDate.getYear() == year && toDate.getMonthValue() == month) {
+                        adjustedEndTime = toDate.atTime(23, 59, 59);
+                    }
 
                     // Count unique participants for this month with quarter and subject filtering
+                    // using adjusted time bounds to respect the specific date range
                     long uniqueParticipants = countUniqueParticipants(
-                            userIds, startOfMonth, endOfMonth, quarter, subject);
+                            userIds, adjustedStartTime, adjustedEndTime, quarter, subject);
 
                     Map<String, Object> monthData = new LinkedHashMap<>();
-                    monthData.put("month", months[month - 1]);
+
+                    // Include year in label if spanning multiple years
+                    String monthLabel = months[month - 1];
+                    if (start.getYear() != end.getYear()) {
+                        monthLabel += " " + year;
+                    }
+
+                    monthData.put("month", monthLabel);
                     monthData.put("participants", uniqueParticipants);
 
                     resultData.add(monthData);
+
+                    // Move to next month
+                    current = current.plusMonths(1);
                 }
             }
 
@@ -161,7 +258,7 @@ public class StatisticsController {
     }
 
     /**
-     * Count unique participants with subject and quarter filtering
+     * Count unique participants with proper combination of all filters
      */
     private long countUniqueParticipants(
             List<String> userIds,
@@ -170,69 +267,59 @@ public class StatisticsController {
             String quarter,
             String subject) {
 
-        // If no quarter or subject filter, use the existing repository method
-        if ((quarter == null || quarter.isEmpty()) && (subject == null || subject.isEmpty())) {
-            if (userIds.isEmpty()) {
-                return libraryHoursRepository.countDistinctUsersByTimeInBetween(startTime, endTime);
-            } else {
-                return libraryHoursRepository.countDistinctUsersByIdNumberInAndTimeInBetween(
-                        userIds, startTime, endTime);
-            }
-        }
-
         // Convert to LocalDate for progress repository methods
-        LocalDate startDate = startTime.toLocalDate();
-        LocalDate endDate = endTime.toLocalDate();
+        final LocalDate startDate = startTime.toLocalDate();
+        final LocalDate endDate = endTime.toLocalDate();
+        final String finalQuarter = quarter;
+        final String finalSubject = subject;
 
-        // For quarter and subject filtering, we need to count based on progress
-        // repository
+        // For filtering, we need to use progress repository
         Set<String> uniqueParticipants = new HashSet<>();
 
-        // Base list of users to check
+        // Base list of users to check (already filtered by grade and section only)
         List<String> idsToCheck = userIds.isEmpty() ? userRepository.findByRole("Student").stream()
                 .map(User::getIdNumber)
-                .collect(Collectors.toList()) : userIds;
+                .collect(Collectors.toList())
+                : userIds;
 
-        // For each user, check if they have progress matching our criteria
+        // For each user, check if they have progress matching ALL filtering criteria
         for (String userId : idsToCheck) {
-            // Get all progress records for this student
             List<LibraryRequirementProgress> progressList = progressRepository.findByStudentId(userId);
 
-            // Check if any progress record meets our filtering criteria
-            boolean hasMatchingProgress = false;
+            // Create a combined filter that applies ALL conditions
+            boolean hasMatchingProgress = progressList.stream()
+                    .anyMatch(progress -> {
+                        // Date range condition - this already incorporates academic year if set
+                        boolean dateRangeMatches = progress.getLastUpdated() != null &&
+                                !progress.getLastUpdated().isBefore(startDate) &&
+                                !progress.getLastUpdated().isAfter(endDate);
 
-            if (quarter != null && !quarter.isEmpty() && subject != null && !subject.isEmpty()) {
-                // Both quarter and subject filters
-                hasMatchingProgress = progressList.stream()
-                        .anyMatch(progress -> progress.getQuarter().equals(quarter) &&
-                                progress.getSubject().equals(subject) &&
-                                progress.getMinutesRendered() > 0 &&
-                                progress.getLastUpdated() != null &&
-                                !progress.getLastUpdated().isBefore(startDate) &&
-                                !progress.getLastUpdated().isAfter(endDate));
-            } else if (quarter != null && !quarter.isEmpty()) {
-                // Only quarter filter
-                hasMatchingProgress = progressList.stream()
-                        .anyMatch(progress -> progress.getQuarter().equals(quarter) &&
-                                progress.getMinutesRendered() > 0 &&
-                                progress.getLastUpdated() != null &&
-                                !progress.getLastUpdated().isBefore(startDate) &&
-                                !progress.getLastUpdated().isAfter(endDate));
-            } else if (subject != null && !subject.isEmpty()) {
-                // Only subject filter
-                hasMatchingProgress = progressList.stream()
-                        .anyMatch(progress -> progress.getSubject().equals(subject) &&
-                                progress.getMinutesRendered() > 0 &&
-                                progress.getLastUpdated() != null &&
-                                !progress.getLastUpdated().isBefore(startDate) &&
-                                !progress.getLastUpdated().isAfter(endDate));
-            }
+                        // Minutes condition
+                        boolean minutesMatch = progress.getMinutesRendered() > 0;
 
-            // If the user has matching progress, count them as a participant
+                        // Quarter condition (if specified)
+                        boolean quarterMatches = finalQuarter == null ||
+                                finalQuarter.isEmpty() ||
+                                finalQuarter.equals(progress.getQuarter());
+
+                        // Subject condition (if specified)
+                        boolean subjectMatches = finalSubject == null ||
+                                finalSubject.isEmpty() ||
+                                finalSubject.equals(progress.getSubject());
+
+                        // ALL conditions must be true
+                        return dateRangeMatches && minutesMatch && quarterMatches && subjectMatches;
+                    });
+
             if (hasMatchingProgress) {
                 uniqueParticipants.add(userId);
             }
         }
+
+        logger.info("Counted " + uniqueParticipants.size() + " participants for filters - " +
+                "quarter: " + quarter + ", subject: " + subject +
+                ", dateRange: " + startDate + " to " + endDate +
+                ", from " + userIds.size() + " filtered users");
 
         return uniqueParticipants.size();
     }
@@ -243,14 +330,20 @@ public class StatisticsController {
             @RequestParam(required = false) String gradeLevel,
             @RequestParam(required = false) String section,
             @RequestParam(required = false) String academicYear,
-            @RequestParam(required = false) String subject) {
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String quarter,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         try {
             logger.info("Getting completion rate with filters: " +
                     "timeframe=" + timeframe +
                     ", gradeLevel=" + gradeLevel +
                     ", section=" + section +
                     ", academicYear=" + academicYear +
-                    ", subject=" + subject);
+                    ", subject=" + subject +
+                    ", quarter=" + quarter +
+                    ", dateFrom=" + dateFrom +
+                    ", dateTo=" + dateTo);
 
             // Default to monthly if timeframe not specified
             timeframe = (timeframe != null) ? timeframe.toLowerCase() : "monthly";
@@ -259,8 +352,47 @@ public class StatisticsController {
             LocalDate today = LocalDate.now();
             int currentYear = today.getYear();
 
+            // Parse date filters if provided
+            LocalDate fromDate = null;
+            LocalDate toDate = null;
+
+            // If academic year is specified (format should be like "2025-2026")
+            if (academicYear != null && !academicYear.isEmpty()) {
+                try {
+                    // Parse the academic year range
+                    String[] years = academicYear.split("-");
+                    if (years.length == 2) {
+                        int startYear = Integer.parseInt(years[0]);
+                        int endYear = Integer.parseInt(years[1]);
+
+                        // If no explicit date range is provided, set it based on academic year
+                        if (dateFrom == null || dateFrom.isEmpty()) {
+                            // Typically academic years start in August/September
+                            fromDate = LocalDate.of(startYear, Month.JULY, 1);
+                        }
+
+                        if (dateTo == null || dateTo.isEmpty()) {
+                            // Typically academic years end in May/June
+                            toDate = LocalDate.of(endYear, Month.JUNE, 30);
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Failed to parse academic year: " + academicYear);
+                    // Continue with default values if parsing fails
+                }
+            }
+
+            // Explicit date filters override academic year settings
+            if (dateFrom != null && !dateFrom.isEmpty()) {
+                fromDate = LocalDate.parse(dateFrom, DATE_FORMATTER);
+            }
+
+            if (dateTo != null && !dateTo.isEmpty()) {
+                toDate = LocalDate.parse(dateTo, DATE_FORMATTER);
+            }
+
             // Apply grade level and section filters to get relevant users
-            List<User> filteredUsers = filterUsers(gradeLevel, section, academicYear);
+            List<User> filteredUsers = filterUsers(gradeLevel, section);
             // Get student IDs for filtering
             List<String> studentIds = filteredUsers.stream()
                     .map(User::getIdNumber)
@@ -279,6 +411,10 @@ public class StatisticsController {
                     monday = monday.minusWeeks(1);
                 }
 
+                // Adjust date range if using date filters
+                LocalDate startDay = fromDate != null ? fromDate : monday;
+                LocalDate endDay = toDate != null ? toDate : monday.plusDays(6);
+
                 // Create a separate map for each day of the week
                 Map<DayOfWeek, Map<String, Object>> weekDataMap = new HashMap<>();
 
@@ -290,16 +426,20 @@ public class StatisticsController {
                     weekDataMap.put(dow, dayData);
                 }
 
-                // Create a fixed set of 7 days for the current week
-                for (int i = 0; i < 7; i++) {
-                    LocalDate currentDate = monday.plusDays(i);
+                // Process each day in the date range
+                LocalDate currentDate = startDay;
+                while (!currentDate.isAfter(endDay)) {
                     DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
+                    final LocalDate finalCurrentDate = currentDate;
 
                     // Calculate completion rate for this day using the filtered student IDs
-                    double rate = calculateCompletionRate(currentDate, currentDate, studentIds, subject);
+                    double rate = calculateCompletionRate(finalCurrentDate, finalCurrentDate, studentIds, subject,
+                            quarter);
 
                     // Update the map with actual data
                     weekDataMap.get(dayOfWeek).put("rate", Math.round(rate));
+
+                    currentDate = currentDate.plusDays(1);
                 }
 
                 // Add days in order from Monday to Sunday
@@ -312,19 +452,66 @@ public class StatisticsController {
                     resultData.add(weekDataMap.get(day));
                 }
             } else {
-                // For monthly data - show all months in current year
-                for (int month = 1; month <= 12; month++) {
-                    LocalDate startOfMonth = LocalDate.of(currentYear, month, 1);
-                    LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+                // For monthly data
+                if (fromDate == null && toDate == null) {
+                    // If no date filters and no academic year, default to current year
+                    fromDate = LocalDate.of(currentYear, 1, 1);
+                    toDate = LocalDate.of(currentYear, 12, 31);
+                }
 
-                    // Calculate completion rate for this month using the filtered student IDs
-                    double rate = calculateCompletionRate(startOfMonth, endOfMonth, studentIds, subject);
+                // Ensure we have both dates
+                LocalDate startDate = fromDate != null ? fromDate : LocalDate.of(currentYear, 1, 1);
+                LocalDate endDate = toDate != null ? toDate : LocalDate.of(currentYear, 12, 31);
+
+                // Create a range of year-month combinations to iterate through
+                YearMonth start = YearMonth.from(startDate);
+                YearMonth end = YearMonth.from(endDate);
+
+                YearMonth current = start;
+                while (!current.isAfter(end)) {
+                    int year = current.getYear();
+                    int month = current.getMonthValue();
+
+                    // Get start and end of month
+                    LocalDate startOfMonth = LocalDate.of(year, month, 1);
+                    LocalDate endOfMonth = current.atEndOfMonth();
+
+                    // Create adjusted time bounds that respect the specific date range
+                    LocalDate adjustedStartDate = startOfMonth;
+                    LocalDate adjustedEndDate = endOfMonth;
+
+                    // If fromDate is provided and is in this month, use it as the start
+                    if (fromDate != null && fromDate.getYear() == year && fromDate.getMonthValue() == month) {
+                        adjustedStartDate = fromDate;
+                    }
+
+                    // If dateTo is provided and is in this month, use it as the end
+                    if (toDate != null && toDate.getYear() == year && toDate.getMonthValue() == month) {
+                        adjustedEndDate = toDate;
+                    }
+
+                    // Create final copies for lambda expressions
+                    final LocalDate finalStartDate = adjustedStartDate;
+                    final LocalDate finalEndDate = adjustedEndDate;
+
+                    // Calculate completion rate for this month with all filters applied
+                    double rate = calculateCompletionRate(finalStartDate, finalEndDate, studentIds, subject, quarter);
 
                     Map<String, Object> monthData = new LinkedHashMap<>();
-                    monthData.put("month", Month.of(month).toString().substring(0, 3));
+
+                    // Include year in label if spanning multiple years
+                    String monthLabel = Month.of(month).toString().substring(0, 3);
+                    if (start.getYear() != end.getYear()) {
+                        monthLabel += " " + year;
+                    }
+
+                    monthData.put("month", monthLabel);
                     monthData.put("rate", Math.round(rate));
 
                     resultData.add(monthData);
+
+                    // Move to next month
+                    current = current.plusMonths(1);
                 }
             }
 
@@ -344,7 +531,8 @@ public class StatisticsController {
             LocalDate startDate,
             LocalDate endDate,
             List<String> studentIds,
-            String subject) {
+            String subject,
+            String quarter) {
 
         long totalRequirements = 0;
         long completedRequirements = 0;
@@ -360,21 +548,35 @@ public class StatisticsController {
         for (String studentId : studentIds) {
             List<LibraryRequirementProgress> studentProgress = progressRepository.findByStudentId(studentId);
 
-            // Filter by date range
+            // Filter with all conditions
+            final LocalDate finalStartDate = startDate;
+            final LocalDate finalEndDate = endDate;
+            final String finalSubject = subject;
+            final String finalQuarter = quarter;
+
             List<LibraryRequirementProgress> filteredProgress = studentProgress.stream()
-                    .filter(p -> p.getLastUpdated() != null &&
-                            !p.getLastUpdated().isBefore(startDate) &&
-                            !p.getLastUpdated().isAfter(endDate))
+                    .filter(p -> {
+                        // Date range condition
+                        boolean dateRangeMatches = p.getLastUpdated() != null &&
+                                !p.getLastUpdated().isBefore(finalStartDate) &&
+                                !p.getLastUpdated().isAfter(finalEndDate);
+
+                        // Subject condition (if specified)
+                        boolean subjectMatches = finalSubject == null ||
+                                finalSubject.isEmpty() ||
+                                finalSubject.equals(p.getSubject());
+
+                        // Quarter condition (if specified)
+                        boolean quarterMatches = finalQuarter == null ||
+                                finalQuarter.isEmpty() ||
+                                finalQuarter.equals(p.getQuarter());
+
+                        // All conditions must be true
+                        return dateRangeMatches && subjectMatches && quarterMatches;
+                    })
                     .collect(Collectors.toList());
 
             progressList.addAll(filteredProgress);
-        }
-
-        // Apply subject filter if specified
-        if (subject != null && !subject.isEmpty()) {
-            progressList = progressList.stream()
-                    .filter(p -> subject.equals(p.getSubject()))
-                    .collect(Collectors.toList());
         }
 
         // Count total and completed requirements
@@ -391,56 +593,207 @@ public class StatisticsController {
         return rate;
     }
 
-    // Alternative approach focusing only on completed requirements by month
     @GetMapping("/completed-requirements")
-    public ResponseEntity<?> getCompletedRequirements() {
+    public ResponseEntity<?> getCompletedRequirements(
+            @RequestParam(required = false) String academicYear,
+            @RequestParam(required = false) String gradeLevel,
+            @RequestParam(required = false) String section,
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String quarter,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         try {
+            logger.info("Getting completed requirements with filters: " +
+                    "academicYear=" + academicYear +
+                    ", gradeLevel=" + gradeLevel +
+                    ", section=" + section +
+                    ", subject=" + subject +
+                    ", quarter=" + quarter +
+                    ", dateFrom=" + dateFrom +
+                    ", dateTo=" + dateTo);
+
             // Get current year
             int currentYear = LocalDate.now().getYear();
+
+            // Parse date filters if provided
+            LocalDate fromDate = null;
+            LocalDate toDate = null;
+
+            // If academic year is specified (format should be like "2025-2026")
+            if (academicYear != null && !academicYear.isEmpty()) {
+                try {
+                    // Parse the academic year range
+                    String[] years = academicYear.split("-");
+                    if (years.length == 2) {
+                        int startYear = Integer.parseInt(years[0]);
+                        int endYear = Integer.parseInt(years[1]);
+
+                        // If no explicit date range is provided, set it based on academic year
+                        if (dateFrom == null || dateFrom.isEmpty()) {
+                            // Typically academic years start in August/September
+                            fromDate = LocalDate.of(startYear, Month.JULY, 1);
+                        }
+
+                        if (dateTo == null || dateTo.isEmpty()) {
+                            // Typically academic years end in May/June
+                            toDate = LocalDate.of(endYear, Month.JUNE, 30);
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Failed to parse academic year: " + academicYear);
+                    // Continue with default values if parsing fails
+                }
+            }
+
+            // Explicit date filters override academic year settings
+            if (dateFrom != null && !dateFrom.isEmpty()) {
+                fromDate = LocalDate.parse(dateFrom, DATE_FORMATTER);
+            }
+
+            if (dateTo != null && !dateTo.isEmpty()) {
+                toDate = LocalDate.parse(dateTo, DATE_FORMATTER);
+            }
 
             // Create response data for each month
             List<Map<String, Object>> monthlyData = new ArrayList<>();
 
-            for (int month = 1; month <= 12; month++) {
-                LocalDate startOfMonth = LocalDate.of(currentYear, month, 1);
-                LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+            // If no date filters, default to current year
+            if (fromDate == null && toDate == null) {
+                fromDate = LocalDate.of(currentYear, 1, 1);
+                toDate = LocalDate.of(currentYear, 12, 31);
+            }
 
-                // Count completed requirements for this month
-                long completedRequirements = progressRepository.countByIsCompletedTrueAndLastUpdatedBetween(
-                        startOfMonth, endOfMonth);
+            // Create a range of year-month combinations to iterate through
+            YearMonth start = YearMonth.from(fromDate);
+            YearMonth end = YearMonth.from(toDate);
+
+            YearMonth current = start;
+            while (!current.isAfter(end)) {
+                int year = current.getYear();
+                int month = current.getMonthValue();
+
+                // Get start and end of month
+                LocalDate startOfMonth = LocalDate.of(year, month, 1);
+                LocalDate endOfMonth = current.atEndOfMonth();
+
+                // Create adjusted time bounds that respect the specific date range
+                LocalDate adjustedStartDate = startOfMonth;
+                LocalDate adjustedEndDate = endOfMonth;
+
+                // If fromDate is provided and is in this month, use it as the start
+                if (fromDate != null && fromDate.getYear() == year && fromDate.getMonthValue() == month) {
+                    adjustedStartDate = fromDate;
+                }
+
+                // If dateTo is provided and is in this month, use it as the end
+                if (toDate != null && toDate.getYear() == year && toDate.getMonthValue() == month) {
+                    adjustedEndDate = toDate;
+                }
+
+                // Create final copies for lambda expressions
+                final LocalDate finalStartDate = adjustedStartDate;
+                final LocalDate finalEndDate = adjustedEndDate;
+                final String finalSubject = (subject != null && !subject.isEmpty()) ? subject : null;
+                final String finalQuarter = (quarter != null && !quarter.isEmpty()) ? quarter : null;
+
+                // Apply grade and section filters to get relevant users
+                List<User> filteredUsers = filterUsers(gradeLevel, section);
+                List<String> studentIds = filteredUsers.stream()
+                        .map(User::getIdNumber)
+                        .collect(Collectors.toList());
+
+                // Manual filtering approach
+                List<LibraryRequirementProgress> allProgress = new ArrayList<>();
+
+                // Get progress for each filtered student
+                for (String studentId : studentIds) {
+                    List<LibraryRequirementProgress> studentProgress = progressRepository
+                            .findByStudentId(studentId);
+                    allProgress.addAll(studentProgress);
+                }
+
+                // Filter by all criteria together with proper AND logic
+                long completedRequirements = allProgress.stream()
+                        .filter(p -> {
+                            // Completion status
+                            boolean isCompleted = p.getIsCompleted();
+
+                            // Date range condition
+                            boolean dateRangeMatches = p.getLastUpdated() != null &&
+                                    !p.getLastUpdated().isBefore(finalStartDate) &&
+                                    !p.getLastUpdated().isAfter(finalEndDate);
+
+                            // Subject condition (if specified)
+                            boolean subjectMatches = finalSubject == null ||
+                                    finalSubject.equals(p.getSubject());
+
+                            // Quarter condition (if specified)
+                            boolean quarterMatches = finalQuarter == null ||
+                                    finalQuarter.equals(p.getQuarter());
+
+                            // All conditions must be true
+                            return isCompleted && dateRangeMatches && subjectMatches && quarterMatches;
+                        })
+                        .count();
 
                 Map<String, Object> monthData = new LinkedHashMap<>();
-                monthData.put("month", Month.of(month).toString().substring(0, 3));
-                monthData.put("rate", completedRequirements); // Using the actual count instead of percentage
+
+                // Include year in label if spanning multiple years
+                String monthLabel = Month.of(month).toString().substring(0, 3);
+                if (start.getYear() != end.getYear() || academicYear != null) {
+                    monthLabel += " " + year;
+                }
+
+                monthData.put("month", monthLabel);
+                monthData.put("count", completedRequirements);
 
                 monthlyData.add(monthData);
+
+                // Move to next month
+                current = current.plusMonths(1);
             }
 
             return ResponseEntity.ok(monthlyData);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
-                    .body(Map.of("error", "Failed to fetch completed requirements statistics"));
+                    .body(Map.of("error", "Failed to fetch completed requirements statistics: " + e.getMessage()));
         }
     }
 
-    // Make method public to fix visibility issue
-    public List<User> filterUsers(String gradeLevel, String section, String academicYear) {
+    /**
+     * Enhanced filterUsers method that properly handles filters
+     * Updated to NOT use academicYear filter for students
+     */
+    public List<User> filterUsers(String gradeLevel, String section) {
         List<User> allUsers = userRepository.findByRole("Student");
 
         // Log the filter parameters for debugging
         logger.info("Filtering users with criteria: gradeLevel=" + gradeLevel +
-                ", section=" + section + ", academicYear=" + academicYear);
+                ", section=" + section);
 
-        // Apply filters with enhanced null handling
-        return allUsers.stream()
-                .filter(user -> gradeLevel == null || gradeLevel.isEmpty() || "All Grades".equals(gradeLevel) ||
-                        gradeLevel.equals(user.getGrade()) ||
-                        gradeLevel.equals("Grade " + user.getGrade()))
-                .filter(user -> section == null || section.isEmpty() ||
-                        section.equals(user.getSection()))
-                .filter(user -> academicYear == null || academicYear.isEmpty() ||
-                        academicYear.equals(user.getAcademicYear()))
+        // Create a filtered list with grade and section filters applied
+        List<User> filteredUsers = allUsers.stream()
+                .filter(user -> {
+                    // Grade level filter (handle different formats)
+                    boolean gradeMatches = gradeLevel == null || gradeLevel.isEmpty() ||
+                            "All Grades".equals(gradeLevel) ||
+                            gradeLevel.equals(user.getGrade()) ||
+                            gradeLevel.equals("Grade " + user.getGrade());
+
+                    // Section filter
+                    boolean sectionMatches = section == null || section.isEmpty() ||
+                            section.equals(user.getSection());
+
+                    // Only apply grade and section filters - academicYear is used only for date
+                    // ranges
+                    return gradeMatches && sectionMatches;
+                })
                 .collect(Collectors.toList());
+
+        logger.info("Filtered " + allUsers.size() + " users down to " + filteredUsers.size() +
+                " based on gradeLevel and section");
+
+        return filteredUsers;
     }
 }
