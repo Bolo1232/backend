@@ -85,4 +85,7 @@ public interface LibraryRequirementProgressRepository extends JpaRepository<Libr
     long countByLastUpdatedBetweenAndSubject(LocalDate start, LocalDate end, String subject);
 
     long countByIsCompletedTrueAndLastUpdatedBetweenAndSubject(LocalDate start, LocalDate end, String subject);
+
+    long countByStudentIdInAndIsCompletedTrueAndLastUpdatedBetween(
+            List<String> studentIds, LocalDate startDate, LocalDate endDate);
 }
