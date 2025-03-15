@@ -1,10 +1,13 @@
 package wildtrack.example.wildtrackbackend.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -29,6 +32,17 @@ public class Book {
 
     @Column(nullable = false)
     private String genre; // Use genre name directly
+
+    @Column(name = "date_registered")
+    private LocalDateTime dateRegistered;
+    
+    // Automatically set the date when a new entity is created
+    @PrePersist
+    protected void onCreate() {
+        if (dateRegistered == null) {
+            dateRegistered = LocalDateTime.now();
+        }
+    }
 
     // Getters and Setters
     public Long getId() {
@@ -77,5 +91,13 @@ public class Book {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+    
+    public LocalDateTime getDateRegistered() {
+        return dateRegistered;
+    }
+
+    public void setDateRegistered(LocalDateTime dateRegistered) {
+        this.dateRegistered = dateRegistered;
     }
 }
