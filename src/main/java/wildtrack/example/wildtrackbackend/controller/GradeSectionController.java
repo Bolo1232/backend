@@ -36,6 +36,12 @@ public class GradeSectionController {
         return ResponseEntity.ok(gradeSectionService.getActiveGradeSections());
     }
 
+    @GetMapping("/grade/{gradeLevel}/active")
+    public ResponseEntity<List<GradeSection>> getActiveSectionsByGrade(
+            @PathVariable String gradeLevel) {
+        return ResponseEntity.ok(gradeSectionService.getActiveSectionsByGrade(gradeLevel));
+    }
+
     @GetMapping("/grade/{gradeLevel}")
     public ResponseEntity<List<GradeSection>> getGradeSectionsByGrade(
             @PathVariable String gradeLevel) {
@@ -71,6 +77,16 @@ public class GradeSectionController {
             return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/grade/{gradeLevel}/toggle-archive")
+    public ResponseEntity<?> toggleGradeArchiveStatus(@PathVariable String gradeLevel) {
+        try {
+            List<GradeSection> sections = gradeSectionService.toggleGradeArchiveStatus(gradeLevel);
+            return ResponseEntity.ok(sections);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to toggle archive status for grade"));
         }
     }
 }

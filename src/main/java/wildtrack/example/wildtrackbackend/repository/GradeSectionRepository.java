@@ -12,4 +12,6 @@ public interface GradeSectionRepository extends JpaRepository<GradeSection, Long
     List<GradeSection> findByStatus(String status);
 
     boolean existsByGradeLevelAndSectionName(String gradeLevel, String sectionName);
+
+    List<GradeSection> findByGradeLevelAndStatus(String gradeLevel, String status);
 }

@@ -67,4 +67,27 @@ public class AcademicYearController {
                     .body(Map.of("error", "An error occurred while deleting the academic year."));
         }
     }
+
+    @PutMapping("/{id}/archive")
+    public ResponseEntity<?> archiveAcademicYear(@PathVariable Long id) {
+        try {
+            AcademicYear archivedAcademicYear = academicYearService.toggleArchiveStatus(id);
+            return ResponseEntity.ok(archivedAcademicYear);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<?> getActiveAcademicYears() {
+        try {
+            List<AcademicYear> activeYears = academicYearService.getActiveAcademicYears();
+            return ResponseEntity.ok(activeYears);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred while fetching active academic years."));
+        }
+    }
 }
