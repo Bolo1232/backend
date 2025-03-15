@@ -45,6 +45,7 @@ public class BookController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ISBN already exists.");
             }
 
+            // If dateRegistered isn't set, it will be automatically set by @PrePersist
             Book savedBook = bookService.saveBook(book);
             return ResponseEntity.ok(savedBook);
         } catch (Exception e) {
@@ -68,22 +69,39 @@ public class BookController {
 
     // Retrieve a specific book by its ID
     @GetMapping("/{id}")
-public ResponseEntity<?> getBookById(@PathVariable Long id) {
-    try {
-        Optional<Book> bookOptional = bookService.getBookById(id);
+    public ResponseEntity<?> getBookById(@PathVariable Long id) {
+        try {
+            Optional<Book> bookOptional = bookService.getBookById(id);
 
-        if (bookOptional.isPresent()) {
-            return ResponseEntity.ok(bookOptional.get());
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book not found.");
+            if (bookOptional.isPresent()) {
+                return ResponseEntity.ok(bookOptional.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred.");
         }
-    } catch (Exception e) {
-        e.printStackTrace();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("An unexpected error occurred.");
     }
-}
 
+    // Update an existing book
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody Book book) {
+        try {
+            Optional<Book> updatedBook = bookService.updateBook(id, book);
+            
+            if (updatedBook.isPresent()) {
+                return ResponseEntity.ok(updatedBook.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book not found.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred.");
+        }
+    }
 
     // Assign a book to specific library hours
     @PutMapping("/{bookId}/assign-library-hours/{libraryHoursId}")
