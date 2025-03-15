@@ -53,6 +53,12 @@ public class BookService {
             existingBook.setAccessionNumber(updatedBook.getAccessionNumber());
             existingBook.setIsbn(updatedBook.getIsbn());
             existingBook.setGenre(updatedBook.getGenre());
+            
+            // Only update dateRegistered if it's provided
+            if (updatedBook.getDateRegistered() != null) {
+                existingBook.setDateRegistered(updatedBook.getDateRegistered());
+            }
+            
             return bookRepository.save(existingBook);
         });
     }
