@@ -63,4 +63,31 @@ public class GradeSectionService {
 
         return gradeSectionRepository.save(existingGradeSection);
     }
+
+    public List<GradeSection> toggleGradeArchiveStatus(String gradeLevel) {
+        List<GradeSection> sections = gradeSectionRepository.findByGradeLevel(gradeLevel);
+
+        if (sections.isEmpty()) {
+            throw new RuntimeException("No sections found for grade level: " + gradeLevel);
+        }
+
+        // Determine the current status by checking if all sections are archived
+        boolean allArchived = sections.stream().allMatch(section -> "archived".equals(section.getStatus()));
+
+        // Set the new status: if all are archived, make all active; otherwise, archive
+        // all
+        String newStatus = allArchived ? "active" : "archived";
+
+        // Update all sections in the grade
+        for (GradeSection section : sections) {
+            section.setStatus(newStatus);
+        }
+
+        return gradeSectionRepository.saveAll(sections);
+    }
+
+    public List<GradeSection> getActiveSectionsByGrade(String gradeLevel) {
+        // Get all sections for the specified grade level where status is 'active'
+        return gradeSectionRepository.findByGradeLevelAndStatus(gradeLevel, "active");
+    }
 }
