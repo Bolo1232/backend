@@ -49,10 +49,6 @@ public class ManageNASStudentController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "ID Number is required."));
             }
-            if (user.getEmail() == null || user.getEmail().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Email is required."));
-            }
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Password is required."));
@@ -65,10 +61,11 @@ public class ManageNASStudentController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Assigned Task is required."));
             }
-            // Check if email already exists
-            if (userService.isEmailExists(user.getEmail())) {
+
+            // Check if ID number already exists
+            if (userService.isIdNumberExists(user.getIdNumber())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Email already exists."));
+                        .body(Map.of("error", "ID Number already exists."));
             }
 
             // Set role to "NAS Student"

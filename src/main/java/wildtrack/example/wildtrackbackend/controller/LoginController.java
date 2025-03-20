@@ -8,6 +8,7 @@ import wildtrack.example.wildtrackbackend.repository.UserRepository;
 import wildtrack.example.wildtrackbackend.service.TokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,7 +28,7 @@ public class LoginController {
     // Login endpoint (using idNumber)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
-        String idNumber = loginRequest.get("idNumber"); // Use idNumber instead of email
+        String idNumber = loginRequest.get("idNumber");
         String password = loginRequest.get("password");
 
         Optional<User> userOptional = userRepository.findByIdNumber(idNumber);
@@ -37,16 +38,35 @@ public class LoginController {
             if (passwordEncoder.matches(password, user.getPassword())) {
                 String token = tokenService.generateToken(idNumber);
 
-                return ResponseEntity.ok(Map.of(
-                        "message", "Login successful",
-                        "token", token,
-                        "role", user.getRole(),
-                        "idNumber", user.getIdNumber()));
+                // Create a response map with all needed fields
+                Map<String, Object> responseMap = new HashMap<>();
+                responseMap.put("message", "Login successful");
+                responseMap.put("token", token);
+                responseMap.put("role", user.getRole());
+                responseMap.put("idNumber", user.getIdNumber());
+                responseMap.put("userId", user.getId());
+                responseMap.put("requirePasswordChange", user.isPasswordResetRequired());
+
+                return ResponseEntity.ok(responseMap);
             } else {
-                return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+                // Use consistent error format
+                Map<String, Object> errorMap = new HashMap<>();
+
+                if (user.isPasswordResetRequired()) {
+                    errorMap.put("error", "temporary_password_incorrect");
+                    errorMap.put("message",
+                            "Incorrect temporary password. Please request the correct temporary password from the Librarian.");
+                } else {
+                    errorMap.put("error", "invalid_credentials");
+                    errorMap.put("message", "Invalid credentials");
+                }
+
+                return ResponseEntity.status(401).body(errorMap);
             }
         } else {
-            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            return ResponseEntity.status(404).body(Map.of(
+                    "error", "user_not_found",
+                    "message", "User not found"));
         }
     }
 
