@@ -1,4 +1,3 @@
-
 package wildtrack.example.wildtrackbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +22,8 @@ public class ManageLibrarianController {
     @GetMapping("/all")
     public ResponseEntity<?> getAllLibrarians() {
         try {
-            List<User> librarians = userService.getUsersByRole("Librarian"); // Reusing the method that retrieves users by role
+            List<User> librarians = userService.getUsersByRole("Librarian"); // Reusing the method that retrieves users
+                                                                             // by role
             return ResponseEntity.ok(librarians);
         } catch (Exception e) {
             e.printStackTrace();
@@ -36,9 +36,9 @@ public class ManageLibrarianController {
     @PostMapping("/register")
     public ResponseEntity<?> registerLibrarian(@RequestBody User user) {
         try {
-            // Validate if email already exists
-            if (userService.isEmailExists(user.getEmail())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email already exists."));
+            // Check if ID number already exists
+            if (userService.isIdNumberExists(user.getIdNumber())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "ID Number already exists."));
             }
 
             // Ensure role is "Librarian"

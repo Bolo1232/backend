@@ -35,11 +35,10 @@ public class SetLibraryHoursController {
     public ResponseEntity<SetLibraryHours> setLibraryHours(@RequestBody SetLibraryHours setLibraryHours) {
         // Get the authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName(); // This will be the user's idNumber or email
+        String username = auth.getName(); // This will be the user's idNumber
 
-        // Find the user by ID number or email
-        User user = userRepository.findByIdNumber(username)
-                .orElseGet(() -> userRepository.findByEmail(username).orElse(null));
+        // Find the user by ID number
+        User user = userRepository.findByIdNumber(username).orElse(null);
 
         if (user != null && "Teacher".equals(user.getRole())) {
             // Set the creator ID

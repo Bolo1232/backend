@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.persistence.Transient;
 
@@ -17,11 +16,6 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Email(message = "Invalid email address")
-    @NotBlank(message = "Email is required")
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
 
     @NotBlank(message = "First name is required")
     @Column(name = "first_name", nullable = false)
@@ -39,8 +33,9 @@ public class User {
     @Column(name = "role", nullable = false)
     private String role;
 
-    // Additional fields for students
-    @Column(name = "id_number", nullable = true, unique = true)
+    // User identification
+    @Column(name = "id_number", nullable = false, unique = true)
+    @NotBlank(message = "ID Number is required")
     private String idNumber;
 
     @Column(name = "grade", nullable = true)
@@ -79,6 +74,18 @@ public class User {
 
     @Column(name = "department", nullable = true)
     private String department;
+
+    @Column(name = "password_reset_required", nullable = false)
+    private boolean passwordResetRequired = false;
+
+    // Add getters and setters
+    public boolean isPasswordResetRequired() {
+        return passwordResetRequired;
+    }
+
+    public void setPasswordResetRequired(boolean passwordResetRequired) {
+        this.passwordResetRequired = passwordResetRequired;
+    }
 
     // Add getters and setters
     public String getPosition() {
@@ -172,14 +179,6 @@ public class User {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getFirstName() {

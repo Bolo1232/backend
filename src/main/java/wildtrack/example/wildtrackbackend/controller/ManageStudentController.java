@@ -35,8 +35,9 @@ public class ManageStudentController {
     @PostMapping("/register")
     public ResponseEntity<?> registerStudent(@RequestBody User user) {
         try {
-            if (userService.isEmailExists(user.getEmail())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Email already exists."));
+            // Check if ID number already exists
+            if (userService.isIdNumberExists(user.getIdNumber())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "ID Number already exists."));
             }
 
             // Ensure the user has the role 'Student'
@@ -64,6 +65,19 @@ public class ManageStudentController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateStudent(@PathVariable Long id, @RequestBody User user) {
         try {
+            // Get existing user to compare ID numbers
+            User existingUser = userService.findById(id);
+            if (existingUser == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Student not found."));
+            }
+
+            // Check if ID number is being changed and if the new ID number already exists
+            if (!existingUser.getIdNumber().equals(user.getIdNumber()) &&
+                    userService.isIdNumberExists(user.getIdNumber())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "ID Number already exists."));
+            }
+
             // Ensure the user has the role 'Student'
             if (!"Student".equalsIgnoreCase(user.getRole())) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)

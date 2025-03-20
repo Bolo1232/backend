@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import wildtrack.example.wildtrackbackend.entity.User;
 import wildtrack.example.wildtrackbackend.repository.UserRepository;
+import wildtrack.example.wildtrackbackend.service.PasswordValidationService.PasswordValidationResult;
 
 @Service
 public class UserService {
@@ -17,6 +18,13 @@ public class UserService {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Autowired
+    private PasswordValidationService passwordValidationService;
+
+    public boolean isIdNumberExists(String idNumber) {
+        return userRepository.existsByIdNumber(idNumber);
+    }
 
     public void updateProfilePicture(Long userId, String profilePictureUrl) throws Exception {
         User user = userRepository.findById(userId)
@@ -50,14 +58,24 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new Exception("User not found with id: " + id));
 
-        // Verify the current password
+        // Verify the current password (skip for reset flow)
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        if (!encoder.matches(currentPassword, user.getPassword())) {
+        if (!user.isPasswordResetRequired() && !encoder.matches(currentPassword, user.getPassword())) {
             throw new Exception("Current password is incorrect.");
+        }
+
+        // Validate the new password
+        PasswordValidationResult validationResult = passwordValidationService.validatePassword(newPassword);
+        if (!validationResult.isValid()) {
+            throw new Exception(validationResult.getErrorMessage());
         }
 
         // Update the password
         user.setPassword(encoder.encode(newPassword));
+
+        // Clear the reset flag
+        user.setPasswordResetRequired(false);
+
         userRepository.save(user);
     }
 
@@ -106,11 +124,13 @@ public class UserService {
                 .count();
     }
 
-    public boolean isEmailExists(String email) {
-        return userRepository.existsByEmail(email); // This must return true if the email exists
-    }
+    public void saveUser(User user) throws Exception {
+        // Validate password before saving
+        PasswordValidationResult validationResult = passwordValidationService.validatePassword(user.getPassword());
+        if (!validationResult.isValid()) {
+            throw new Exception(validationResult.getErrorMessage());
+        }
 
-    public void saveUser(User user) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         user.setPassword(encoder.encode(user.getPassword()));
         userRepository.save(user);
@@ -164,5 +184,24 @@ public class UserService {
     public long getStudentsCount() {
         // Return count of all registered students
         return userRepository.countByRole("Student");
+    }
+
+    // Add this method to your UserService class if it doesn't already exist
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public void resetPassword(Long userId, String tempPassword) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User not found with id: " + userId));
+
+        // Set new temporary password
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        user.setPassword(encoder.encode(tempPassword));
+
+        // Set the flag to indicate password reset is required
+        user.setPasswordResetRequired(true);
+
+        userRepository.save(user);
     }
 }

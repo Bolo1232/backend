@@ -158,14 +158,10 @@ public class SetLibraryHoursService {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.isAuthenticated()) {
-                String username = auth.getName(); // This is either idNumber or email
+                String username = auth.getName(); // This is idNumber
 
-                // Find user by ID number or email
+                // Find user by ID number
                 Optional<User> userOpt = userRepository.findByIdNumber(username);
-                if (userOpt.isEmpty()) {
-                    userOpt = userRepository.findByEmail(username);
-                }
-
                 return userOpt.map(User::getId).orElse(null);
             }
             return null;
