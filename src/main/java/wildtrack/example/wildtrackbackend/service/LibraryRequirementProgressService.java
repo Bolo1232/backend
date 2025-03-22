@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,8 +43,8 @@ public class LibraryRequirementProgressService {
     private NotificationService notificationService;
 
     /**
-     * Initialize requirements for a student
-     * This should be called when new requirements are set for a grade level
+     * Initialize only new requirements for a student
+     * This should only fetch requirements created after the user's registration
      */
     @Transactional
     public void initializeRequirements(String studentId) {
@@ -59,12 +60,30 @@ public class LibraryRequirementProgressService {
         User student = userOpt.get();
         String gradeLevel = student.getGrade();
 
+        // Get user's registration date/creation date - with fix for effectively final
+        // variable
+        final LocalDateTime userCreationDate = student.getCreatedAt() != null
+                ? student.getCreatedAt()
+                : LocalDateTime.now().minusYears(1);
+
+        if (student.getCreatedAt() == null) {
+            logger.warning("User has no creation date, using fallback date: " + userCreationDate);
+        }
+
         // Get all APPROVED requirements for this grade level
-        List<SetLibraryHours> requirements = requirementRepository.findByGradeLevelAndApprovalStatus(gradeLevel,
+        List<SetLibraryHours> allRequirements = requirementRepository.findByGradeLevelAndApprovalStatus(gradeLevel,
                 "APPROVED");
 
-        // For each requirement, create a progress record if it doesn't exist
-        for (SetLibraryHours requirement : requirements) {
+        // Filter requirements to only include those created after user registration
+        List<SetLibraryHours> newRequirements = allRequirements.stream()
+                .filter(req -> req.getCreatedAt() != null && req.getCreatedAt().isAfter(userCreationDate))
+                .collect(Collectors.toList());
+
+        logger.info("Found " + newRequirements.size() + " new requirements for student " + studentId +
+                " out of " + allRequirements.size() + " total requirements");
+
+        // For each new requirement, create a progress record if it doesn't exist
+        for (SetLibraryHours requirement : newRequirements) {
             // Check if progress record already exists
             Optional<LibraryRequirementProgress> existingProgress = progressRepository
                     .findByStudentIdAndRequirementId(studentId, requirement.getId());
@@ -171,41 +190,29 @@ public class LibraryRequirementProgressService {
             logger.warning("No incomplete requirement progress found for student " + studentId +
                     (subject != null ? " for subject " + subject : ""));
 
-            // Initialize requirements if none found
+            // Check if any requirements exist at all before initializing
             if (progressRepository.findByStudentId(studentId).isEmpty()) {
-                initializeRequirements(studentId);
-
-                // Try again after initialization
-                recordLibraryTime(libraryHoursId);
+                // Only log the warning, don't auto-initialize
+                logger.warning("No requirements found for student: " + studentId);
             }
         }
     }
 
     /**
-     * Get all requirement progress for a student
+     * Get all requirement progress for a student without auto-initialization
      */
     public List<LibraryRequirementProgress> getStudentProgress(String studentId) {
-        List<LibraryRequirementProgress> progress = progressRepository.findByStudentId(studentId);
-
-        // If no progress records, initialize requirements
-        if (progress.isEmpty()) {
-            initializeRequirements(studentId);
-            progress = progressRepository.findByStudentId(studentId);
-        }
-
-        return progress;
+        // Simply return existing progress - no auto-initialization
+        return progressRepository.findByStudentId(studentId);
     }
 
     /**
-     * Get progress summary for a student
+     * Get progress summary for a student without auto-initialization
      */
     public Map<String, Object> getProgressSummary(String studentId) {
         Map<String, Object> summary = new HashMap<>();
 
-        // Make sure requirements are initialized
-        if (progressRepository.findByStudentId(studentId).isEmpty()) {
-            initializeRequirements(studentId);
-        }
+        // Skip auto-initialization - just use existing records
 
         // Get counts
         Integer totalRequirements = (int) progressRepository.countByStudentId(studentId);

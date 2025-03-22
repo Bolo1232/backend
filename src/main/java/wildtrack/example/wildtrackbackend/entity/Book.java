@@ -35,7 +35,7 @@ public class Book {
 
     @Column(name = "date_registered")
     private LocalDateTime dateRegistered;
-    
+
     // Automatically set the date when a new entity is created
     @PrePersist
     protected void onCreate() {
@@ -92,7 +92,7 @@ public class Book {
     public void setGenre(String genre) {
         this.genre = genre;
     }
-    
+
     public LocalDateTime getDateRegistered() {
         return dateRegistered;
     }

@@ -2,6 +2,7 @@ package wildtrack.example.wildtrackbackend.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -151,6 +152,15 @@ public class SetLibraryHoursService {
         }
 
         return null;
+    }
+
+    // New method to get all subjects for a grade level
+    public List<String> getSubjectsForGrade(String gradeLevel) {
+        List<SetLibraryHours> approvedHours = repository.findByGradeLevelAndApprovalStatus(gradeLevel, "APPROVED");
+        return approvedHours.stream()
+                .map(SetLibraryHours::getSubject)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     // Helper method to get current user ID from security context

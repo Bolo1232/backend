@@ -10,9 +10,12 @@ import java.util.List;
 public interface SetLibraryHoursRepository extends JpaRepository<SetLibraryHours, Long> {
     List<SetLibraryHours> findByGradeLevel(String gradeLevel);
 
-    // New methods to find by approval status
+    // Methods to find by approval status
     List<SetLibraryHours> findByApprovalStatus(String approvalStatus);
 
     // Find approved requirements for a grade level
     List<SetLibraryHours> findByGradeLevelAndApprovalStatus(String gradeLevel, String approvalStatus);
+
+    // Find requirements by subject and grade level
+    List<SetLibraryHours> findBySubjectAndGradeLevel(String subject, String gradeLevel);
 }
