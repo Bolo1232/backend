@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
@@ -54,6 +55,10 @@ public class SetLibraryHours {
     @Column(length = 500)
     private String rejectionReason;
 
+    // Add created_at column to track when requirement was created
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     // Enum for Quarter with better JSON serialization
     public enum Quarter {
         First("First"),
@@ -84,6 +89,16 @@ public class SetLibraryHours {
 
     // Default constructor
     public SetLibraryHours() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Getter and setter for createdAt
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     // Getters
@@ -209,6 +224,7 @@ public class SetLibraryHours {
                 ", approvalStatus='" + approvalStatus + '\'' +
                 ", createdById=" + createdById +
                 ", rejectionReason='" + (rejectionReason != null ? rejectionReason : "none") + '\'' +
+                ", createdAt=" + createdAt +
                 '}';
     }
 }

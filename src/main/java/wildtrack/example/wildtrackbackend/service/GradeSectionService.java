@@ -58,6 +58,8 @@ public class GradeSectionService {
         GradeSection existingGradeSection = gradeSectionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Grade section not found"));
 
+        // Update section name as well
+        existingGradeSection.setSectionName(updatedGradeSection.getSectionName());
         existingGradeSection.setAdvisor(updatedGradeSection.getAdvisor());
         existingGradeSection.setNumberOfStudents(updatedGradeSection.getNumberOfStudents());
 

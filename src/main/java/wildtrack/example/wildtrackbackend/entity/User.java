@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.persistence.Transient;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -77,6 +78,24 @@ public class User {
 
     @Column(name = "password_reset_required", nullable = false)
     private boolean passwordResetRequired = false;
+
+    // Add created_at column to track when user was created
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    // Default constructor should initialize createdAt
+    public User() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // Add getter and setter for createdAt
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     // Add getters and setters
     public boolean isPasswordResetRequired() {

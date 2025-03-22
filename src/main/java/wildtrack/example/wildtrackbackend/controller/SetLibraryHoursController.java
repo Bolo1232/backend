@@ -55,10 +55,17 @@ public class SetLibraryHoursController {
         return ResponseEntity.ok(hours);
     }
 
-    // New endpoint to get only approved requirements for a grade level
+    // Endpoint to get only approved requirements for a grade level
     @GetMapping("/approved/{gradeLevel}")
     public ResponseEntity<List<SetLibraryHours>> getApprovedRequirements(@PathVariable String gradeLevel) {
         List<SetLibraryHours> approvedHours = service.getApprovedRequirements(gradeLevel);
         return ResponseEntity.ok(approvedHours);
+    }
+
+    // New endpoint to get subjects for a grade level
+    @GetMapping("/subjects/{gradeLevel}")
+    public ResponseEntity<List<String>> getSubjectsForGrade(@PathVariable String gradeLevel) {
+        List<String> subjects = service.getSubjectsForGrade(gradeLevel);
+        return ResponseEntity.ok(subjects);
     }
 }
