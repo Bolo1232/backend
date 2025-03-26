@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
 import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
@@ -15,9 +16,13 @@ public class TimeOutService {
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
 
+    @Autowired
+    private LibraryRequirementProgressService libraryRequirementProgressService;
+
     /**
      * Record time-out for a student, ensuring they have a book assigned
      */
+    @Transactional
     public LibraryHours recordTimeOut(String idNumber) {
         // Find the latest time-in record without a time-out
         Optional<LibraryHours> openTimeInOpt = libraryHoursRepository
@@ -43,14 +48,23 @@ public class TimeOutService {
         long minutes = java.time.Duration.between(openTimeIn.getTimeIn(), openTimeIn.getTimeOut()).toMinutes();
         openTimeIn.setMinutesCounted((int) minutes);
 
-        // Save and return the updated record
-        return libraryHoursRepository.save(openTimeIn);
+        // Set isCounted to true to ensure it's included in reports
+        openTimeIn.setIsCounted(true);
+
+        // Save the updated record
+        LibraryHours savedRecord = libraryHoursRepository.save(openTimeIn);
+
+        // Update library requirement progress with this time
+        libraryRequirementProgressService.recordLibraryTime(savedRecord.getId());
+
+        return savedRecord;
     }
 
     /**
      * Record time-out with subject for a student, ensuring they have a book
      * assigned
      */
+    @Transactional
     public LibraryHours recordTimeOutWithSubject(String idNumber, String subject) {
         // Find the latest time-in record without a time-out
         Optional<LibraryHours> openTimeInOpt = libraryHoursRepository
@@ -77,7 +91,15 @@ public class TimeOutService {
         long minutes = java.time.Duration.between(openTimeIn.getTimeIn(), openTimeIn.getTimeOut()).toMinutes();
         openTimeIn.setMinutesCounted((int) minutes);
 
-        // Save and return the updated record
-        return libraryHoursRepository.save(openTimeIn);
+        // Set isCounted to true to ensure it's included in reports
+        openTimeIn.setIsCounted(true);
+
+        // Save the updated record
+        LibraryHours savedRecord = libraryHoursRepository.save(openTimeIn);
+
+        // Update library requirement progress with this time
+        libraryRequirementProgressService.recordLibraryTime(savedRecord.getId());
+
+        return savedRecord;
     }
 }

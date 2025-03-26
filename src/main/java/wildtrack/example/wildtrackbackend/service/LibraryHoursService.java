@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import wildtrack.example.wildtrackbackend.dto.StudentLibrarySummary;
 import wildtrack.example.wildtrackbackend.entity.LibraryHours;
@@ -31,6 +32,9 @@ public class LibraryHoursService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private LibraryRequirementProgressService libraryRequirementProgressService;
 
     public List<Map<String, Object>> getTotalMinutesSpentByUser(
             String idNumber, String dateFrom, String dateTo, String academicYear) {
@@ -174,7 +178,8 @@ public class LibraryHoursService {
         libraryHoursRepository.save(libraryHours);
     }
 
-    // Record a time-out entry
+    // Record a time-out entry with automatic requirement crediting
+    @Transactional
     public void recordTimeOut(String idNumber) {
         LibraryHours libraryHours = libraryHoursRepository.findLatestByIdNumber(idNumber)
                 .orElseThrow(() -> new RuntimeException("No open time-in record found for this student."));
@@ -183,9 +188,26 @@ public class LibraryHoursService {
             throw new RuntimeException("Time-out has already been recorded for the latest time-in.");
         }
 
-        // Record time-out for the most recent time-in
+        // Record time-out
         libraryHours.setTimeOut(LocalDateTime.now());
-        libraryHoursRepository.save(libraryHours);
+
+        // Calculate minutes
+        LocalDateTime timeIn = libraryHours.getTimeIn();
+        LocalDateTime timeOut = libraryHours.getTimeOut();
+        int minutes = (int) Duration.between(timeIn, timeOut).toMinutes();
+
+        // Save the calculated minutes to the record
+        libraryHours.setMinutesCounted(minutes);
+
+        // Set isCounted flag to true
+        libraryHours.setIsCounted(true);
+
+        // Save the record
+        LibraryHours savedHours = libraryHoursRepository.save(libraryHours);
+
+        // Automatically call the requirement progress service to allocate these minutes
+        // This will handle crediting the minutes to the appropriate requirement
+        libraryRequirementProgressService.recordLibraryTime(savedHours.getId());
     }
 
     // Fetch all library hours
