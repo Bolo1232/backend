@@ -19,6 +19,9 @@ public class Genre {
     private String genre; // Genre name
 
     private String title;
+    
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean archived = false;
 
     // No mapped relationship needed
     // Books are managed via the genre name
@@ -46,5 +49,13 @@ public class Genre {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+    
+    public boolean isArchived() {
+        return archived;
+    }
+    
+    public void setArchived(boolean archived) {
+        this.archived = archived;
     }
 }
