@@ -26,6 +26,15 @@ public class UserService {
         return userRepository.existsByIdNumber(idNumber);
     }
 
+    // Add validation methods
+    public boolean isValidName(String name) {
+        return name != null && name.matches("^[A-Za-z\\s]+$");
+    }
+
+    public boolean isValidIdNumber(String idNumber) {
+        return idNumber != null && idNumber.matches("^[0-9-]+$");
+    }
+
     public void updateProfilePicture(Long userId, String profilePictureUrl) throws Exception {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new Exception("User not found"));
@@ -125,6 +134,24 @@ public class UserService {
     }
 
     public void saveUser(User user) throws Exception {
+        // Validate names
+        if (!isValidName(user.getFirstName())) {
+            throw new Exception("First name should contain letters only.");
+        }
+
+        if (user.getMiddleName() != null && !user.getMiddleName().isEmpty() && !isValidName(user.getMiddleName())) {
+            throw new Exception("Middle name should contain letters only.");
+        }
+
+        if (!isValidName(user.getLastName())) {
+            throw new Exception("Last name should contain letters only.");
+        }
+
+        // Validate ID number
+        if (!isValidIdNumber(user.getIdNumber())) {
+            throw new Exception("ID Number should contain only numbers and dashes.");
+        }
+
         // Validate password before saving
         PasswordValidationResult validationResult = passwordValidationService.validatePassword(user.getPassword());
         if (!validationResult.isValid()) {
@@ -147,6 +174,25 @@ public class UserService {
     public User updateUser(Long id, User updatedUserDetails) throws Exception {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new Exception("User not found with id: " + id));
+
+        // Validate names
+        if (!isValidName(updatedUserDetails.getFirstName())) {
+            throw new Exception("First name should contain letters only.");
+        }
+
+        if (updatedUserDetails.getMiddleName() != null && !updatedUserDetails.getMiddleName().isEmpty()
+                && !isValidName(updatedUserDetails.getMiddleName())) {
+            throw new Exception("Middle name should contain letters only.");
+        }
+
+        if (!isValidName(updatedUserDetails.getLastName())) {
+            throw new Exception("Last name should contain letters only.");
+        }
+
+        // Validate ID number
+        if (!isValidIdNumber(updatedUserDetails.getIdNumber())) {
+            throw new Exception("ID Number should contain only numbers and dashes.");
+        }
 
         existingUser.setFirstName(updatedUserDetails.getFirstName());
         existingUser.setLastName(updatedUserDetails.getLastName());

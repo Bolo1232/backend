@@ -35,7 +35,7 @@ public class LibraryRequirementProgressController {
     }
 
     /**
-     * Get progress summary for a student
+     * Get progress summary for a student (without auto-initialization)
      */
     @GetMapping("/summary/{studentId}")
     public ResponseEntity<?> getProgressSummary(@PathVariable String studentId) {
@@ -46,6 +46,37 @@ public class LibraryRequirementProgressController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error retrieving progress summary: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get progress summary for a student with auto-initialization
+     * This will initialize requirements if none exist
+     */
+    @GetMapping("/summary-with-init/{studentId}")
+    public ResponseEntity<?> getProgressSummaryWithInit(@PathVariable String studentId) {
+        try {
+            Map<String, Object> summary = progressService.getProgressSummaryWithInit(studentId);
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error retrieving progress summary: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Check for new requirements added by teachers
+     */
+    @GetMapping("/check-new-requirements/{studentId}")
+    public ResponseEntity<?> checkForNewRequirements(@PathVariable String studentId) {
+        try {
+            List<LibraryRequirementProgress> updatedRequirements = progressService.checkForNewRequirements(studentId);
+            return ResponseEntity.ok(updatedRequirements);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error checking for new requirements: " + e.getMessage()));
         }
     }
 

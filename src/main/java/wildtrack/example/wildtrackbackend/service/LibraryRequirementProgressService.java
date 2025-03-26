@@ -4,9 +4,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -107,6 +109,60 @@ public class LibraryRequirementProgressService {
     }
 
     /**
+     * Check for new requirements for a student
+     * This should be called periodically to capture new requirements added by
+     * teachers
+     */
+    @Transactional
+    public List<LibraryRequirementProgress> checkForNewRequirements(String studentId) {
+        logger.info("Checking for new requirements for student: " + studentId);
+
+        // Get existing requirements
+        List<LibraryRequirementProgress> existingProgress = progressRepository.findByStudentId(studentId);
+
+        // Collect IDs of requirements already assigned to this student
+        Set<Long> existingRequirementIds = existingProgress.stream()
+                .map(LibraryRequirementProgress::getRequirementId)
+                .collect(Collectors.toSet());
+
+        // Initialize new requirements (this will only create ones that don't exist yet)
+        initializeRequirements(studentId);
+
+        // Fetch updated list of requirements (including any newly added ones)
+        List<LibraryRequirementProgress> updatedProgress = progressRepository.findByStudentId(studentId);
+
+        // Find newly added requirements
+        List<LibraryRequirementProgress> newlyAddedRequirements = updatedProgress.stream()
+                .filter(req -> !existingRequirementIds.contains(req.getRequirementId()))
+                .collect(Collectors.toList());
+
+        if (!newlyAddedRequirements.isEmpty()) {
+            logger.info("Found " + newlyAddedRequirements.size() + " new requirements for student " + studentId);
+
+            // Create a notification for the student about new requirements
+            if (newlyAddedRequirements.size() > 0) {
+                Optional<User> userOpt = userRepository.findByIdNumber(studentId);
+                if (userOpt.isPresent()) {
+                    String title = "New Reading Requirements";
+                    String message = String.format(
+                            "You have %d new reading requirement(s) assigned to you. Please check your requirements page for details.",
+                            newlyAddedRequirements.size());
+
+                    notificationService.createUserNotification(
+                            userOpt.get().getId(),
+                            title,
+                            message,
+                            "NEW_REQUIREMENTS",
+                            null);
+                }
+            }
+        }
+
+        // Return all requirements including any new ones
+        return updatedProgress;
+    }
+
+    /**
      * Record library time for a student
      * This should be called when a student times out
      */
@@ -130,6 +186,16 @@ public class LibraryRequirementProgressService {
         if (minutes <= 0) {
             logger.warning("No valid minutes to record for library hours ID: " + libraryHoursId);
             return;
+        }
+
+        // Check if student has any requirements, initialize if needed
+        long requirementCount = progressRepository.countByStudentId(studentId);
+        if (requirementCount == 0) {
+            logger.info("Initializing requirements for student before recording time: " + studentId);
+            initializeRequirements(studentId);
+        } else {
+            // Also check for new requirements in case all existing ones are completed
+            checkForNewRequirements(studentId);
         }
 
         // Find matching requirement progress
@@ -189,12 +255,6 @@ public class LibraryRequirementProgressService {
         } else {
             logger.warning("No incomplete requirement progress found for student " + studentId +
                     (subject != null ? " for subject " + subject : ""));
-
-            // Check if any requirements exist at all before initializing
-            if (progressRepository.findByStudentId(studentId).isEmpty()) {
-                // Only log the warning, don't auto-initialize
-                logger.warning("No requirements found for student: " + studentId);
-            }
         }
     }
 
@@ -240,6 +300,27 @@ public class LibraryRequirementProgressService {
         summary.put("overallPercentage", Math.min(100.0, overallPercentage));
 
         return summary;
+    }
+
+    /**
+     * Get progress summary for a student with auto-initialization
+     * This will initialize requirements if none exist and check for new ones
+     */
+    public Map<String, Object> getProgressSummaryWithInit(String studentId) {
+        // Check if student has any requirements
+        long requirementCount = progressRepository.countByStudentId(studentId);
+
+        if (requirementCount == 0) {
+            // Auto-initialize if no requirements found
+            logger.info("Auto-initializing requirements for student: " + studentId);
+            initializeRequirements(studentId);
+        } else {
+            // Check for new requirements if student already has some
+            checkForNewRequirements(studentId);
+        }
+
+        // Return summary
+        return getProgressSummary(studentId);
     }
 
     /**
