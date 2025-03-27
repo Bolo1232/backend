@@ -10,6 +10,6 @@ import wildtrack.example.wildtrackbackend.entity.Book;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
     boolean existsByAccessionNumber(String accessionNumber);
-    boolean existsByIsbn(String isbn);
+
     List<Book> findByGenre(String genre); // Custom query to fetch books by genre
 }

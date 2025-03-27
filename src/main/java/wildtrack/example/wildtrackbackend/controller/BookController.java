@@ -41,10 +41,6 @@ public class BookController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Accession number already exists.");
             }
 
-            if (bookService.existsByIsbn(book.getIsbn())) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ISBN already exists.");
-            }
-
             // If dateRegistered isn't set, it will be automatically set by @PrePersist
             Book savedBook = bookService.saveBook(book);
             return ResponseEntity.ok(savedBook);
@@ -90,7 +86,7 @@ public class BookController {
     public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody Book book) {
         try {
             Optional<Book> updatedBook = bookService.updateBook(id, book);
-            
+
             if (updatedBook.isPresent()) {
                 return ResponseEntity.ok(updatedBook.get());
             } else {
