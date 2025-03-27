@@ -21,11 +21,10 @@ public class SecurityConfig {
                 .cors().and() // Enable CORS
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/files/images/**", // Add this line
+                                "/api/files/images/**",
                                 "/api/users/register",
-
-                                "/api/**", // Registration endpoint
-                                "/api/login", // Login endpoint
+                                "/api/**",
+                                "/api/login",
                                 "/api/verify-token",
                                 "/api/users/uploads/**",
                                 "/api/library-hours/**",
@@ -34,8 +33,8 @@ public class SecurityConfig {
                                 "/api/students/**",
                                 "/api/teachers/**",
                                 "/api/nas-students/**",
-                                "/api/booklog/**" // Token verification endpoint
-                        ).permitAll() // Allow unauthenticated access to these endpoints
+                                "/api/booklog/**")
+                        .permitAll() // Allow unauthenticated access to these endpoints
                         .anyRequest().authenticated() // All other requests require authentication
                 )
                 .httpBasic(); // Keep Basic Authentication for now
@@ -46,11 +45,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174")); // Frontend //
-                                                                                                          // origins
+        // Add your Vercel deployment URL to allowed origins
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "https://wild-track.vercel.app", // Add your Vercel deployment URL
+                "https://wild-track-ejhubs-projects.vercel.app" // Also add with www subdomain just in case
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        configuration.setAllowCredentials(true); // Allow credentials if needed
+        // Add Content-Type, Accept, Authorization for proper API interaction
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L); // 1 hour cache for CORS preflight requests
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
