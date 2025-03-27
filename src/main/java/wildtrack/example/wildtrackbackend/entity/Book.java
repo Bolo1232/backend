@@ -27,7 +27,7 @@ public class Book {
     @Column(name = "accession_number", nullable = false, unique = true)
     private String accessionNumber;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true, unique = true)
     private String isbn;
 
     @Column(nullable = false)
