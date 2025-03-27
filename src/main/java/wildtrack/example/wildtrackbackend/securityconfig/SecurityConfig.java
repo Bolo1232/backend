@@ -52,6 +52,7 @@ public class SecurityConfig {
                 "https://wild-track.vercel.app",
                 "https://wild-track-ejhubs-projects.vercel.app",
                 "https://wild-track-mi1773661-ejhubs-projects.vercel.app" // Add this new domain
+
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
