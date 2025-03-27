@@ -45,18 +45,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Add your Vercel deployment URL to allowed origins
+        // Add ALL your possible Vercel domains
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "http://localhost:5174",
-                "https://wild-track.vercel.app", // Add your Vercel deployment URL
-                "https://wild-track-ejhubs-projects.vercel.app" // Also add with www subdomain just in case
+                "https://wild-track.vercel.app",
+                "https://wild-track-ejhubs-projects.vercel.app",
+                "https://wild-track-mi1773661-ejhubs-projects.vercel.app" // Add this new domain
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Add Content-Type, Accept, Authorization for proper API interaction
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // 1 hour cache for CORS preflight requests
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
