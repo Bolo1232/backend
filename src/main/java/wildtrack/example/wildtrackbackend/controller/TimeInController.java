@@ -12,8 +12,11 @@ import wildtrack.example.wildtrackbackend.service.UserService;
 
 @RestController
 @RequestMapping("/api/time-in")
+
 @CrossOrigin(origins = { "http://localhost:5173", "https://wild-track.vercel.app",
         "https://wild-track-ejhubs-projects.vercel.app" })
+
+
 public class TimeInController {
 
     @Autowired
