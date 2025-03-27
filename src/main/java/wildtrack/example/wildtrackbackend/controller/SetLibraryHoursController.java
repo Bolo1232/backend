@@ -22,7 +22,7 @@ import wildtrack.example.wildtrackbackend.service.SetLibraryHoursService;
 
 @RestController
 @RequestMapping("/api/set-library-hours")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class SetLibraryHoursController {
 
     @Autowired

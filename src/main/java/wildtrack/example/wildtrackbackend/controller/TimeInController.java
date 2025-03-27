@@ -12,8 +12,6 @@ import wildtrack.example.wildtrackbackend.service.UserService;
 
 @RestController
 @RequestMapping("/api/time-in")
-
-
 public class TimeInController {
 
     @Autowired

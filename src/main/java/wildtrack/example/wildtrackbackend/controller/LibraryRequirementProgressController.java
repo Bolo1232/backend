@@ -13,7 +13,7 @@ import wildtrack.example.wildtrackbackend.service.LibraryRequirementProgressServ
 
 @RestController
 @RequestMapping("/api/library-progress")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class LibraryRequirementProgressController {
 
     @Autowired

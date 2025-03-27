@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/library-hours")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class CompletedLibraryHoursController {
     private static final Logger logger = Logger.getLogger(CompletedLibraryHoursController.class.getName());
 

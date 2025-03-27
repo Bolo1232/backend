@@ -13,7 +13,6 @@ import wildtrack.example.wildtrackbackend.service.UserService;
 
 @RestController
 @RequestMapping("/api/time-out")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TimeOutController {
 
     @Autowired

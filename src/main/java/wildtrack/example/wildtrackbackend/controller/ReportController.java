@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "http://localhost:5173") // Enable CORS for your frontend
+
 public class ReportController {
 
     @Autowired

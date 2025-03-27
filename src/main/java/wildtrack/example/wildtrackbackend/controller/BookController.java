@@ -24,7 +24,7 @@ import wildtrack.example.wildtrackbackend.service.LibraryHoursService;
 
 @RestController
 @RequestMapping("/api/books")
-@CrossOrigin(origins = "http://localhost:5173") // Enable CORS for frontend
+
 public class BookController {
 
     @Autowired
