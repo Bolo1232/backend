@@ -49,8 +49,10 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "http://localhost:5174",
-                "https://wild-track.vercel.app", // Add your Vercel deployment URL
-                "https://wild-track-ejhubs-projects.vercel.app" // Also add with www subdomain just in case
+                "https://wild-track.vercel.app",
+                "https://wild-track.vercel.app/", // Added with trailing slash
+                "https://wild-track-ejhubs-projects.vercel.app",
+                "https://wild-track-ejhubs-projects.vercel.app/" // Added with trailing slash
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // Add Content-Type, Accept, Authorization for proper API interaction
