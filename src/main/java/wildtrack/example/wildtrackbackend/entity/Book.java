@@ -77,14 +77,6 @@ public class Book {
         this.accessionNumber = accessionNumber;
     }
 
-    public String getIsbn() {
-        return isbn;
-    }
-
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
-    }
-
     public String getGenre() {
         return genre;
     }

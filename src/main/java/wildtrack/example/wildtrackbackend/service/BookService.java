@@ -35,11 +35,6 @@ public class BookService {
         return bookRepository.existsByAccessionNumber(accessionNumber);
     }
 
-    // Check if a book exists by ISBN
-    public boolean existsByIsbn(String isbn) {
-        return bookRepository.existsByIsbn(isbn);
-    }
-
     // Retrieve a book by its ID
     public Optional<Book> getBookById(Long id) {
         return bookRepository.findById(id);
@@ -51,14 +46,13 @@ public class BookService {
             existingBook.setAuthor(updatedBook.getAuthor());
             existingBook.setTitle(updatedBook.getTitle());
             existingBook.setAccessionNumber(updatedBook.getAccessionNumber());
-            existingBook.setIsbn(updatedBook.getIsbn());
             existingBook.setGenre(updatedBook.getGenre());
-            
+
             // Only update dateRegistered if it's provided
             if (updatedBook.getDateRegistered() != null) {
                 existingBook.setDateRegistered(updatedBook.getDateRegistered());
             }
-            
+
             return bookRepository.save(existingBook);
         });
     }
