@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/librarians") // Manage librarians related API routes
-@CrossOrigin(origins = "http://localhost:5173") // Enable CORS for frontend
+
 public class ManageLibrarianController {
 
     @Autowired

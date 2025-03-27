@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teachers") // Manage teachers related API routes
-@CrossOrigin(origins = "http://localhost:5173") // Enable CORS for frontend
+
 public class ManageTeacherController {
 
     @Autowired

@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/academic-years")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class AcademicYearController {
 
     @Autowired

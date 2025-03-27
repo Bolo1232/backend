@@ -19,7 +19,7 @@ import wildtrack.example.wildtrackbackend.service.ActivityLogService;
 
 @RestController
 @RequestMapping("/api/activity-logs")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class ActivityLogController {
 
     @Autowired
