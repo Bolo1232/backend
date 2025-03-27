@@ -22,6 +22,5 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(uploadLocation);
     }
-    
-    // Remove the addCorsMappings method completely
+
 }
