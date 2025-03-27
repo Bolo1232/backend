@@ -1,4 +1,5 @@
 package wildtrack.example.wildtrackbackend.config;
+
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -9,17 +10,14 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 @Configuration
 public class DatabaseConfig {
 
-    @Value("${spring.datasource.mysql://avnadmin:AVNS_IjOLjLPKx_QsI-P4RrZ@wildtrack-xeverybolo126-83ff.h.aivencloud.com:12424/defaultdb?ssl-mode=REQUIRED}")
+    @Value("${spring.datasource.url}")
     private String url;
 
-    @Value("${spring.datasource.avnadmin}")
+    @Value("${spring.datasource.username}")
     private String username;
 
-    @Value("${spring.datasource.AVNS_IjOLjLPKx_QsI-P4RrZ}")
+    @Value("${spring.datasource.password}")
     private String password;
-
-    @Value("${spring.datasource.com.mysql.cj.jdbc.Driver}")
-    private String driverClassName;
 
     @Bean
     public DataSource dataSource() {
@@ -27,7 +25,7 @@ public class DatabaseConfig {
         dataSource.setUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
-        dataSource.setDriverClassName(driverClassName);
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         return dataSource;
     }
 }
