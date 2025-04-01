@@ -16,10 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/library-hours")
-
 public class CompletedLibraryHoursController {
     private static final Logger logger = Logger.getLogger(CompletedLibraryHoursController.class.getName());
 
@@ -35,6 +35,7 @@ public class CompletedLibraryHoursController {
     @GetMapping("/completed")
     public ResponseEntity<?> getCompletedLibraryHours(
             @RequestParam(required = false) String gradeLevel,
+            @RequestParam(required = false) String section,
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String quarter,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
@@ -42,17 +43,30 @@ public class CompletedLibraryHoursController {
             @RequestParam(required = false) String academicYear) {
         try {
             logger.info("Getting completed library hours with filters - gradeLevel: " + gradeLevel +
+                    ", section: " + section +
                     ", subject: " + subject +
                     ", quarter: " + quarter +
                     ", dateFrom: " + dateFrom +
                     ", dateTo: " + dateTo +
                     ", academicYear: " + academicYear);
 
-            // Get all students of the specified grade level
+            // Get all students of the specified grade level and/or section
             List<User> students = new ArrayList<>();
             if (gradeLevel != null && !gradeLevel.isEmpty()) {
-                students = userRepository.findByGrade(gradeLevel);
-                logger.info("Found " + students.size() + " students in grade level: " + gradeLevel);
+                if (section != null && !section.isEmpty()) {
+                    // If both grade and section are specified, find students by both
+                    students = userRepository.findByGradeAndSection(gradeLevel, section);
+                    logger.info("Found " + students.size() + " students in grade level: " + gradeLevel +
+                            ", section: " + section);
+                } else {
+                    // Otherwise just find by grade
+                    students = userRepository.findByGrade(gradeLevel);
+                    logger.info("Found " + students.size() + " students in grade level: " + gradeLevel);
+                }
+            } else if (section != null && !section.isEmpty()) {
+                // Find by section only if grade is not specified
+                students = userRepository.findBySection(section);
+                logger.info("Found " + students.size() + " students in section: " + section);
             }
 
             // Get student IDs
@@ -65,51 +79,95 @@ public class CompletedLibraryHoursController {
             List<LibraryRequirementProgress> completedProgress;
 
             try {
-                // Apply repository-level filtering first
-                if (subject != null && !subject.isEmpty() && quarter != null && !quarter.isEmpty()) {
-                    completedProgress = progressRepository.findBySubjectAndQuarterAndIsCompletedTrue(subject, quarter);
-                } else if (subject != null && !subject.isEmpty()) {
-                    completedProgress = progressRepository.findBySubjectAndIsCompletedTrue(subject);
-                } else if (quarter != null && !quarter.isEmpty()) {
-                    completedProgress = progressRepository.findByQuarterAndIsCompletedTrue(quarter);
-                } else if (academicYear != null && !academicYear.isEmpty()) {
-                    completedProgress = progressRepository.findByAcademicYearAndIsCompletedTrue(academicYear);
-                } else if (dateFrom != null && dateTo != null) {
-                    completedProgress = progressRepository.findByIsCompletedTrueAndLastUpdatedBetween(dateFrom, dateTo);
-                } else {
-                    completedProgress = progressRepository.findByIsCompletedTrue();
+                // First, get all completed library hours
+                completedProgress = progressRepository.findByIsCompletedTrue();
+                logger.info("Found " + completedProgress.size() + " total completed library hours");
+
+                // Apply subject filter if specified
+                if (subject != null && !subject.isEmpty()) {
+                    completedProgress = completedProgress.stream()
+                            .filter(progress -> subject.equals(progress.getSubject()))
+                            .collect(Collectors.toList());
+                    logger.info("After subject filter: " + completedProgress.size() + " records");
+                }
+
+                // Apply quarter filter if specified
+                if (quarter != null && !quarter.isEmpty()) {
+                    completedProgress = completedProgress.stream()
+                            .filter(progress -> quarter.equals(progress.getQuarter()))
+                            .collect(Collectors.toList());
+                    logger.info("After quarter filter: " + completedProgress.size() + " records");
+                }
+
+                // Apply date range filter if specified
+                if (dateFrom != null && dateTo != null) {
+                    completedProgress = completedProgress.stream()
+                            .filter(progress -> {
+                                if (progress.getLastUpdated() == null)
+                                    return false;
+                                return !progress.getLastUpdated().isBefore(dateFrom) &&
+                                        !progress.getLastUpdated().isAfter(dateTo);
+                            })
+                            .collect(Collectors.toList());
+                    logger.info("After date range filter: " + completedProgress.size() + " records");
+                }
+                // Apply academic year filter if specified
+                else if (academicYear != null && !academicYear.isEmpty()) {
+                    String[] years = academicYear.split("-");
+                    if (years.length == 2) {
+                        try {
+                            int startYear = Integer.parseInt(years[0]);
+                            int endYear = Integer.parseInt(years[1]);
+
+                            // Filter by academic year pattern (July-Dec in first year, Jan-June in second
+                            // year)
+                            completedProgress = completedProgress.stream()
+                                    .filter(progress -> {
+                                        if (progress.getLastUpdated() == null)
+                                            return false;
+
+                                        LocalDate date = progress.getLastUpdated();
+                                        int year = date.getYear();
+                                        int month = date.getMonthValue();
+
+                                        // Academic year pattern: Jul-Dec in first year, Jan-Jun in second year
+                                        return (month >= 7 && month <= 12 && year == startYear) ||
+                                                (month >= 1 && month <= 6 && year == endYear);
+                                    })
+                                    .collect(Collectors.toList());
+
+                            logger.info("After academic year filter: " + completedProgress.size() + " records");
+                        } catch (NumberFormatException e) {
+                            logger.warning("Invalid academic year format: " + academicYear);
+                            // Fall back to exact match on academicYear field
+                            completedProgress = completedProgress.stream()
+                                    .filter(progress -> academicYear.equals(progress.getAcademicYear()))
+                                    .collect(Collectors.toList());
+                        }
+                    } else {
+                        // If format is not "YYYY-YYYY", try exact match
+                        completedProgress = completedProgress.stream()
+                                .filter(progress -> academicYear.equals(progress.getAcademicYear()))
+                                .collect(Collectors.toList());
+                    }
                 }
             } catch (Exception e) {
-                logger.warning(
-                        "Error using repository methods: " + e.getMessage() + ". Falling back to manual filtering.");
-                // Fallback to manual filtering if the repository methods fail
-                completedProgress = progressRepository.findAll().stream()
-                        .filter(progress -> progress.getIsCompleted())
-                        .toList();
+                logger.warning("Error applying filters: " + e.getMessage() + ". Using basic filtering.");
+                // Fallback to basic filtering
+                completedProgress = progressRepository.findByIsCompletedTrue();
+            }
+
+            // Apply student filter if student IDs are available
+            if (!studentIds.isEmpty()) {
+                completedProgress = completedProgress.stream()
+                        .filter(progress -> studentIds.contains(progress.getStudentId()))
+                        .collect(Collectors.toList());
+                logger.info("After student filter: " + completedProgress.size() + " records");
             }
 
             // Create response with user information
             List<Map<String, Object>> result = new ArrayList<>();
             for (LibraryRequirementProgress progress : completedProgress) {
-                // Skip if grade level filter is applied and student is not in the grade level
-                if (!studentIds.isEmpty() && !studentIds.contains(progress.getStudentId())) {
-                    continue;
-                }
-
-                // Apply any additional filters manually if needed
-                if ((dateFrom != null
-                        && (progress.getLastUpdated() == null || progress.getLastUpdated().isBefore(dateFrom))) ||
-                        (dateTo != null
-                                && (progress.getLastUpdated() == null || progress.getLastUpdated().isAfter(dateTo)))
-                        ||
-                        (subject != null && !subject.isEmpty() && !subject.equals(progress.getSubject())) ||
-                        (quarter != null && !quarter.isEmpty() && !quarter.equals(progress.getQuarter())) ||
-                        (academicYear != null && !academicYear.isEmpty() &&
-                                (progress.getAcademicYear() == null
-                                        || !academicYear.equals(progress.getAcademicYear())))) {
-                    continue;
-                }
-
                 // Get user details
                 Optional<User> userOpt = userRepository.findByIdNumber(progress.getStudentId());
                 if (userOpt.isPresent()) {
@@ -121,6 +179,7 @@ public class CompletedLibraryHoursController {
                     record.put("subject", progress.getSubject());
                     record.put("quarter", progress.getQuarter());
                     record.put("gradeLevel", student.getGrade());
+                    record.put("section", student.getSection());
 
                     // Format date completed (last updated date)
                     if (progress.getLastUpdated() != null) {
