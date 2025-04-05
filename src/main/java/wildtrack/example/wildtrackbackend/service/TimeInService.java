@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,9 @@ import wildtrack.example.wildtrackbackend.repository.TimeInRepository;
 
 @Service
 public class TimeInService {
+
+    // Define the Philippines timezone (UTC+8)
+    private static final ZoneId PHILIPPINES_ZONE = ZoneId.of("Asia/Manila");
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
@@ -28,10 +32,10 @@ public class TimeInService {
                     "You already have a time-in recorded without a time-out. Please record a time-out before clocking in again.");
         }
 
-        // Create a new time-in record
+        // Create a new time-in record with the Philippine timezone
         LibraryHours libraryHours = new LibraryHours();
         libraryHours.setIdNumber(idNumber);
-        libraryHours.setTimeIn(LocalDateTime.now());
+        libraryHours.setTimeIn(LocalDateTime.now(PHILIPPINES_ZONE));
         libraryHoursRepository.save(libraryHours);
     }
 

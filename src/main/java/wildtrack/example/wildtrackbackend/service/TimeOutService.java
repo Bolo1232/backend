@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,9 @@ import wildtrack.example.wildtrackbackend.repository.LibraryHoursRepository;
 
 @Service
 public class TimeOutService {
+
+    // Define the Philippines timezone (UTC+8)
+    private static final ZoneId PHILIPPINES_ZONE = ZoneId.of("Asia/Manila");
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
@@ -41,8 +45,8 @@ public class TimeOutService {
             throw new RuntimeException("Please assign a book to your library session before timing out.");
         }
 
-        // Record time-out
-        openTimeIn.setTimeOut(LocalDateTime.now());
+        // Record time-out with the Philippine timezone
+        openTimeIn.setTimeOut(LocalDateTime.now(PHILIPPINES_ZONE));
 
         // Calculate minutes spent
         long minutes = java.time.Duration.between(openTimeIn.getTimeIn(), openTimeIn.getTimeOut()).toMinutes();
@@ -83,8 +87,8 @@ public class TimeOutService {
             throw new RuntimeException("Please assign a book to your library session before timing out.");
         }
 
-        // Record time-out and subject
-        openTimeIn.setTimeOut(LocalDateTime.now());
+        // Record time-out and subject with the Philippine timezone
+        openTimeIn.setTimeOut(LocalDateTime.now(PHILIPPINES_ZONE));
         openTimeIn.setSubject(subject);
 
         // Calculate minutes spent
