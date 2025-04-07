@@ -3,8 +3,8 @@ package wildtrack.example.wildtrackbackend.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,8 +45,12 @@ public class LibraryRequirementProgressService {
     private NotificationService notificationService;
 
     /**
-     * Initialize only new requirements for a student
-     * This should only fetch requirements created after the user's registration
+     * Initialize requirements for a student based on when they joined their current
+     * grade
+     * 
+     * This will ONLY fetch requirements created AFTER the student's grade update
+     * date
+     * or registration date if the student has always been in this grade level
      */
     @Transactional
     public void initializeRequirements(String studentId) {
@@ -62,27 +66,22 @@ public class LibraryRequirementProgressService {
         User student = userOpt.get();
         String gradeLevel = student.getGrade();
 
-        // Get user's registration date/creation date - with fix for effectively final
-        // variable
-        final LocalDateTime userCreationDate = student.getCreatedAt() != null
-                ? student.getCreatedAt()
-                : LocalDateTime.now().minusYears(1);
-
-        if (student.getCreatedAt() == null) {
-            logger.warning("User has no creation date, using fallback date: " + userCreationDate);
-        }
+        // Get the effective date for when the student joined this grade level
+        LocalDateTime gradeJoinDate = getGradeJoinDate(student);
+        logger.info("Using grade join date: " + gradeJoinDate + " for student: " + studentId);
 
         // Get all APPROVED requirements for this grade level
         List<SetLibraryHours> allRequirements = requirementRepository.findByGradeLevelAndApprovalStatus(gradeLevel,
                 "APPROVED");
 
-        // Filter requirements to only include those created after user registration
+        // IMPORTANT: Filter requirements to ONLY include those created AFTER the
+        // student joined this grade level
         List<SetLibraryHours> newRequirements = allRequirements.stream()
-                .filter(req -> req.getCreatedAt() != null && req.getCreatedAt().isAfter(userCreationDate))
+                .filter(req -> req.getCreatedAt() != null && req.getCreatedAt().isAfter(gradeJoinDate))
                 .collect(Collectors.toList());
 
         logger.info("Found " + newRequirements.size() + " new requirements for student " + studentId +
-                " out of " + allRequirements.size() + " total requirements");
+                " out of " + allRequirements.size() + " total requirements for grade " + gradeLevel);
 
         // For each new requirement, create a progress record if it doesn't exist
         for (SetLibraryHours requirement : newRequirements) {
@@ -106,6 +105,28 @@ public class LibraryRequirementProgressService {
                         " and requirement " + requirement.getId());
             }
         }
+    }
+
+    /**
+     * Get the date when student joined their current grade level.
+     * This accounts for grade updates or initial enrollment.
+     */
+    private LocalDateTime getGradeJoinDate(User student) {
+        // Check if the student has a grade update timestamp
+        if (student.getGradeUpdatedAt() != null) {
+            return student.getGradeUpdatedAt();
+        }
+
+        // Fall back to creation date if no grade update timestamp exists
+        if (student.getCreatedAt() != null) {
+            return student.getCreatedAt();
+        }
+
+        // Last resort fallback if no dates are available
+        LocalDateTime fallbackDate = LocalDateTime.now().minusYears(1);
+        logger.warning("No grade update or creation date found for student ID " +
+                student.getIdNumber() + ", using fallback date: " + fallbackDate);
+        return fallbackDate;
     }
 
     /**
@@ -321,6 +342,41 @@ public class LibraryRequirementProgressService {
 
         // Return summary
         return getProgressSummary(studentId);
+    }
+
+    /**
+     * Handle a student's grade change
+     * Updates grade update timestamp and initializes new requirements for current
+     * grade
+     */
+    @Transactional
+    public void handleGradeChange(String studentId, String newGrade) {
+        logger.info("Handling grade change for student: " + studentId + " to grade: " + newGrade);
+
+        // Get the student
+        Optional<User> userOpt = userRepository.findByIdNumber(studentId);
+        if (!userOpt.isPresent()) {
+            logger.warning("Student not found for grade change: " + studentId);
+            return;
+        }
+
+        User student = userOpt.get();
+
+        // Update grade and grade update timestamp
+        String oldGrade = student.getGrade();
+        student.setGrade(newGrade);
+
+        // Set grade update timestamp
+        student.setGradeUpdatedAt(LocalDateTime.now());
+        userRepository.save(student);
+
+        logger.info("Updated grade for student " + studentId + " from " + oldGrade +
+                " to " + newGrade + " with timestamp " + student.getGradeUpdatedAt());
+
+        // Now that grade is updated with timestamp, initialize any new requirements
+        // This will use the grade update timestamp to only get requirements created
+        // after
+        initializeRequirements(studentId);
     }
 
     /**

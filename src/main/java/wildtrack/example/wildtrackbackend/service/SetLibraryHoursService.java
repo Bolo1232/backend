@@ -40,7 +40,7 @@ public class SetLibraryHoursService {
         notificationService.createLibrarianNotification(
                 "New Library Hours Requirement",
                 String.format(
-                        "A new library hours requirement for %s Grade %s, %s Quarter has been submitted and needs your approval.",
+                        "A new library hours requirement for %s %s, %s Quarter has been submitted and needs your approval.",
                         savedHours.getSubject(),
                         savedHours.getGradeLevel(),
                         savedHours.getQuarter().getValue()));
@@ -115,7 +115,7 @@ public class SetLibraryHoursService {
                         hours.getCreatedById(),
                         "Library Hours Requirement Rejected",
                         String.format(
-                                "Your library hours requirement for %s Grade %s, %s Quarter was rejected. Reason: %s",
+                                "Your library hours requirement for %s %s, %s Quarter was rejected. Reason: %s",
                                 hours.getSubject(),
                                 hours.getGradeLevel(),
                                 hours.getQuarter().getValue(),
@@ -127,7 +127,7 @@ public class SetLibraryHoursService {
                 notificationService.createTeacherNotification(
                         "Library Hours Requirement Rejected",
                         String.format(
-                                "A library hours requirement for %s Grade %s, %s Quarter was rejected. Reason: %s",
+                                "A library hours requirement for %s %s, %s Quarter was rejected. Reason: %s",
                                 hours.getSubject(),
                                 hours.getGradeLevel(),
                                 hours.getQuarter().getValue(),

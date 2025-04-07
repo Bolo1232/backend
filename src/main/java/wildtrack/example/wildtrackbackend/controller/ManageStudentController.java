@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.*;
 import wildtrack.example.wildtrackbackend.entity.User;
 import wildtrack.example.wildtrackbackend.service.UserService;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/students") // Manage students related API routes
-
 public class ManageStudentController {
 
     @Autowired
@@ -31,7 +31,7 @@ public class ManageStudentController {
         }
     }
 
-    // Add a new student
+    // Add a new student with automatic password generation
     @PostMapping("/register")
     public ResponseEntity<?> registerStudent(@RequestBody User user) {
         try {
@@ -47,17 +47,33 @@ public class ManageStudentController {
             }
 
             // Validate required fields for students
-            if (user.getGrade() == null || user.getSection() == null) {
+            if (user.getGrade() == null || user.getSection() == null || user.getAcademicYear() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Grade and Section are required for students."));
+                        .body(Map.of("error", "Grade, Section, and Academic Year are required for students."));
             }
 
-            userService.saveUser(user);
-            return ResponseEntity.ok(Map.of("message", "Student registered successfully!"));
+            // Save user with possibly generated password
+            User savedUser = userService.saveUser(user);
+
+            // Prepare response
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Student registered successfully!");
+
+            // Include temporary password if it was auto-generated
+            if (savedUser.isPasswordResetRequired()) {
+                response.put("temporaryPassword", savedUser.getPassword()); // This is the clear text password
+                response.put("passwordResetRequired", true);
+            }
+
+            // Don't include password in the user object
+            savedUser.setPassword(null);
+            response.put("user", savedUser);
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while registering student."));
+            // Return the specific error message from validation
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 

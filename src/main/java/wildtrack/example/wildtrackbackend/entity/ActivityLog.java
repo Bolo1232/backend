@@ -20,6 +20,9 @@ public class ActivityLog {
     @Column(name = "user_id")
     private Long userId;
 
+    @Column(name = "user_id_number")
+    private String userIdNumber; // This will store the display ID like "129"
+
     @Column(name = "user_name")
     private String userName;
 
@@ -44,9 +47,10 @@ public class ActivityLog {
     }
 
     // Constructor with fields
-    public ActivityLog(Long userId, String userName, String userRole, String activity,
-            String description, String academicYear) {
+    public ActivityLog(Long userId, String userIdNumber, String userName, String userRole,
+            String activity, String description, String academicYear) {
         this.userId = userId;
+        this.userIdNumber = userIdNumber; // Store the user's display ID from User.idNumber
         this.userName = userName;
         this.userRole = userRole;
         this.timestamp = LocalDateTime.now();
@@ -70,6 +74,14 @@ public class ActivityLog {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getUserIdNumber() {
+        return userIdNumber;
+    }
+
+    public void setUserIdNumber(String userIdNumber) {
+        this.userIdNumber = userIdNumber;
     }
 
     public String getUserName() {
@@ -122,7 +134,8 @@ public class ActivityLog {
 
     @Override
     public String toString() {
-        return "ActivityLog [id=" + id + ", userId=" + userId + ", userName=" + userName + ", userRole=" + userRole
+        return "ActivityLog [id=" + id + ", userId=" + userId + ", userIdNumber=" + userIdNumber
+                + ", userName=" + userName + ", userRole=" + userRole
                 + ", timestamp=" + timestamp + ", activity=" + activity + ", description=" + description
                 + ", academicYear=" + academicYear + "]";
     }
