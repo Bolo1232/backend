@@ -1,6 +1,7 @@
 package wildtrack.example.wildtrackbackend.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -33,6 +34,26 @@ public class UserService {
 
     public boolean isValidIdNumber(String idNumber) {
         return idNumber != null && idNumber.matches("^[0-9-]+$");
+    }
+
+    // New method to generate a default password
+    public String generateDefaultPassword(User user) {
+        // Create a default password pattern (ID + first letter of first name + first
+        // letter of last name + fixed string)
+        String defaultPassword = user.getIdNumber().substring(0, Math.min(4, user.getIdNumber().length()))
+                + user.getFirstName().substring(0, 1).toUpperCase()
+                + user.getLastName().substring(0, 1).toUpperCase()
+                + "@CITLib!";
+
+        // Validate the password meets requirements
+        PasswordValidationResult validationResult = passwordValidationService.validatePassword(defaultPassword);
+        if (!validationResult.isValid()) {
+            // Fallback to a secure default if the pattern doesn't meet requirements
+            defaultPassword = "Change@" + user.getIdNumber().substring(0, Math.min(4, user.getIdNumber().length()))
+                    + "!";
+        }
+
+        return defaultPassword;
     }
 
     public void updateProfilePicture(Long userId, String profilePictureUrl) throws Exception {
@@ -94,10 +115,6 @@ public class UserService {
 
     /**
      * Returns a filtered list of students based on grade level and section
-     * 
-     * @param gradeLevel The grade level to filter by, or null for all grades
-     * @param section    The section to filter by, or null for all sections
-     * @return Filtered list of students
      */
     public List<User> getStudentsByGradeAndSection(String gradeLevel, String section) {
         List<User> allStudents = userRepository.findByRole("Student");
@@ -112,10 +129,6 @@ public class UserService {
 
     /**
      * Returns the count of students based on grade level and section
-     * 
-     * @param gradeLevel The grade level to filter by, or null for all grades
-     * @param section    The section to filter by, or null for all sections
-     * @return Number of students matching the criteria
      */
     public long getStudentsCountByGradeAndSection(String gradeLevel, String section) {
         List<User> allStudents = userRepository.findByRole("Student");
@@ -133,7 +146,7 @@ public class UserService {
                 .count();
     }
 
-    public void saveUser(User user) throws Exception {
+    public User saveUser(User user) throws Exception {
         // Validate names
         if (!isValidName(user.getFirstName())) {
             throw new Exception("First name should contain letters only.");
@@ -152,15 +165,37 @@ public class UserService {
             throw new Exception("ID Number should contain only numbers and dashes.");
         }
 
-        // Validate password before saving
-        PasswordValidationResult validationResult = passwordValidationService.validatePassword(user.getPassword());
-        if (!validationResult.isValid()) {
-            throw new Exception(validationResult.getErrorMessage());
+        // Set creation timestamp
+        user.setCreatedAt(LocalDateTime.now());
+
+        // Generate password if none provided or empty
+        String clearTextPassword;
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            clearTextPassword = generateDefaultPassword(user);
+            user.setPassword(clearTextPassword);
+            // Set flag requiring password change on first login
+            user.setPasswordResetRequired(true);
+        } else {
+            clearTextPassword = user.getPassword();
+            // Validate password if manually provided
+            PasswordValidationResult validationResult = passwordValidationService.validatePassword(user.getPassword());
+            if (!validationResult.isValid()) {
+                throw new Exception(validationResult.getErrorMessage());
+            }
         }
 
+        // Encrypt the password
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         user.setPassword(encoder.encode(user.getPassword()));
-        userRepository.save(user);
+
+        // Save user to database
+        User savedUser = userRepository.save(user);
+
+        // Set back the clear text password for the return value
+        // This doesn't affect what's saved in the database
+        savedUser.setPassword(clearTextPassword);
+
+        return savedUser;
     }
 
     public List<User> getAllUsers() {
@@ -232,7 +267,6 @@ public class UserService {
         return userRepository.countByRole("Student");
     }
 
-    // Add this method to your UserService class if it doesn't already exist
     public User findById(Long id) {
         return userRepository.findById(id).orElse(null);
     }

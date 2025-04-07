@@ -6,18 +6,18 @@ import org.springframework.web.bind.annotation.*;
 import wildtrack.example.wildtrackbackend.entity.LibraryRequirementProgress;
 import wildtrack.example.wildtrackbackend.entity.User;
 import wildtrack.example.wildtrackbackend.repository.LibraryRequirementProgressRepository;
+import wildtrack.example.wildtrackbackend.repository.TimeInRepository;
 import wildtrack.example.wildtrackbackend.repository.UserRepository;
+import wildtrack.example.wildtrackbackend.service.LibraryRequirementProgressService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/students")
-
 public class TeacherStudentController {
     private static final Logger logger = Logger.getLogger(TeacherStudentController.class.getName());
 
@@ -26,6 +26,11 @@ public class TeacherStudentController {
 
     @Autowired
     private LibraryRequirementProgressRepository progressRepository;
+
+    @Autowired
+    private TimeInRepository timeInRepository; // Add TimeInRepository to check active sessions
+    @Autowired
+    private LibraryRequirementProgressService libraryRequirementProgressService; // Add this
 
     /**
      * Get students filtered by role, grade level, and subject
@@ -55,6 +60,8 @@ public class TeacherStudentController {
             // For each student, check if they have progress for the specified subject and
             // quarter
             for (User student : students) {
+                // Initialize requirements for this student
+                libraryRequirementProgressService.initializeRequirements(student.getIdNumber());
                 List<LibraryRequirementProgress> progressRecords;
 
                 // Filter progress records based on subject and quarter
@@ -72,15 +79,13 @@ public class TeacherStudentController {
                     progressRecords = progressRepository.findByStudentId(student.getIdNumber());
                 }
 
-                // If the student has no matching progress records, skip them
-                if (progressRecords.isEmpty() && (subject != null || quarter != null)) {
-                    continue;
-                }
+                // Check if student has an active time-in session
+                boolean hasActiveSession = timeInRepository.existsByIdNumberAndTimeOutIsNull(student.getIdNumber());
 
-                // For each progress record, create a student entry
+                // Always include students matching the basic filters, even if they have no
+                // progress records
                 if (progressRecords.isEmpty()) {
-                    // If no progress records but no filters applied, include student with basic
-                    // info
+                    // If no progress records, include student with basic info
                     Map<String, Object> studentData = new HashMap<>();
                     studentData.put("idNumber", student.getIdNumber());
                     studentData.put("firstName", student.getFirstName());
@@ -88,10 +93,17 @@ public class TeacherStudentController {
                     studentData.put("grade", student.getGrade());
                     studentData.put("section", student.getSection());
                     studentData.put("gradeSection", student.getGrade() + " " + student.getSection());
-                    studentData.put("progress", "Not started");
+                    studentData.put("minutesRendered", 0); // Added for frontend reference
+
+                    // Set progress status - mark as "In-progress" if they have an active session
+                    studentData.put("progress", hasActiveSession ? "In-progress" : "Not started");
 
                     if (subject != null && !subject.isEmpty()) {
                         studentData.put("subject", subject);
+                    }
+
+                    if (quarter != null && !quarter.isEmpty()) {
+                        studentData.put("quarter", quarter);
                     }
 
                     result.add(studentData);
@@ -112,10 +124,13 @@ public class TeacherStudentController {
                         studentData.put("minutesRendered", progress.getMinutesRendered());
                         studentData.put("requiredMinutes", progress.getRequiredMinutes());
 
-                        // Determine progress status
+                        // Determine progress status with corrected logic
                         if (progress.getIsCompleted()) {
                             studentData.put("progress", "Completed");
-                        } else if (progress.getMinutesRendered() > 0) {
+                        } else if (progress.getMinutesRendered() > 0 || hasActiveSession) {
+                            // Mark as "In-progress" if either:
+                            // 1. They have any minutes recorded, OR
+                            // 2. They have an active time-in session
                             studentData.put("progress", "In-progress");
                         } else {
                             studentData.put("progress", "Not started");

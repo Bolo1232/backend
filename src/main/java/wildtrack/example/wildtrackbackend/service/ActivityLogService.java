@@ -34,8 +34,12 @@ public class ActivityLogService {
 
         String formattedName = formatUserName(user);
 
+        // Get the user's display ID number (like "129") from the User entity
+        String userIdNumber = user.getIdNumber();
+
         ActivityLog log = new ActivityLog(
                 userId,
+                userIdNumber, // Use the display ID from the user entity
                 formattedName,
                 user.getRole(),
                 activity,

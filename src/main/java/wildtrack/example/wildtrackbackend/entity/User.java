@@ -9,10 +9,12 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
+import java.util.logging.Logger;
 
 @Entity
 @Table(name = "users")
 public class User {
+    private static final Logger logger = Logger.getLogger(User.class.getName());
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +43,10 @@ public class User {
 
     @Column(name = "grade", nullable = true)
     private String grade;
+
+    // New field to track when grade was last updated
+    @Column(name = "grade_updated_at")
+    private LocalDateTime gradeUpdatedAt;
 
     @Column(name = "section", nullable = true)
     private String section;
@@ -86,6 +92,15 @@ public class User {
     // Default constructor should initialize createdAt
     public User() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    // Getter and setter for gradeUpdatedAt
+    public LocalDateTime getGradeUpdatedAt() {
+        return gradeUpdatedAt;
+    }
+
+    public void setGradeUpdatedAt(LocalDateTime gradeUpdatedAt) {
+        this.gradeUpdatedAt = gradeUpdatedAt;
     }
 
     // Add getter and setter for createdAt
@@ -244,7 +259,18 @@ public class User {
         return grade;
     }
 
+    // Modified setGrade method to track grade changes
     public void setGrade(String grade) {
+        // Only update the timestamp if grade is actually changing
+        if (this.grade != null && !this.grade.equals(grade)) {
+            this.gradeUpdatedAt = LocalDateTime.now();
+            logger.info("Grade changed from " + this.grade + " to " + grade + " for user " + this.idNumber);
+        } else if (this.grade == null && grade != null) {
+            // First time grade is being set
+            this.gradeUpdatedAt = LocalDateTime.now();
+            logger.info("Grade initially set to " + grade + " for user " + this.idNumber);
+        }
+
         this.grade = grade;
     }
 
