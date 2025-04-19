@@ -37,34 +37,14 @@ public class LibraryHoursService {
     private LibraryRequirementProgressService libraryRequirementProgressService;
 
     public List<Map<String, Object>> getTotalMinutesSpentByUser(
-            String idNumber, String dateFrom, String dateTo, String academicYear) {
+            String idNumber, String dateFrom, String dateTo) {
 
         List<LibraryHours> libraryHoursList = libraryHoursRepository.findByIdNumber(idNumber);
 
         // Apply filters if provided
-        if (dateFrom != null || dateTo != null || academicYear != null) {
+        if (dateFrom != null || dateTo != null) {
             LocalDateTime fromDateTime = dateFrom != null ? LocalDate.parse(dateFrom).atStartOfDay() : null;
             LocalDateTime toDateTime = dateTo != null ? LocalDate.parse(dateTo).atTime(23, 59, 59) : null;
-
-            // Parse academic year if provided (format: "2025-2026")
-            Integer academicYearStart = null;
-            Integer academicYearEnd = null;
-
-            if (academicYear != null && !academicYear.isEmpty()) {
-                String[] years = academicYear.split("-");
-                if (years.length == 2) {
-                    try {
-                        academicYearStart = Integer.parseInt(years[0]);
-                        academicYearEnd = Integer.parseInt(years[1]);
-                    } catch (NumberFormatException e) {
-                        // Invalid format, ignore academic year filter
-                        System.err.println("Invalid academic year format: " + academicYear);
-                    }
-                }
-            }
-
-            final Integer startYear = academicYearStart;
-            final Integer endYear = academicYearEnd;
 
             libraryHoursList = libraryHoursList.stream()
                     .filter(hours -> {
@@ -76,14 +56,6 @@ public class LibraryHoursService {
                         }
                         if (toDateTime != null && hours.getTimeIn().isAfter(toDateTime)) {
                             includeHours = false;
-                        }
-
-                        // Filter by academic year years if provided
-                        if (startYear != null && endYear != null) {
-                            int logYear = hours.getTimeIn().getYear();
-                            if (logYear != startYear && logYear != endYear) {
-                                includeHours = false;
-                            }
                         }
 
                         return includeHours;
@@ -210,6 +182,15 @@ public class LibraryHoursService {
         libraryRequirementProgressService.recordLibraryTime(savedHours.getId());
     }
 
+    // New method to add summary to library hours
+    public LibraryHours addSummaryToLibraryHours(Long id, String summary) {
+        LibraryHours libraryHours = libraryHoursRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Library hours record not found with ID: " + id));
+
+        libraryHours.setSummary(summary);
+        return libraryHoursRepository.save(libraryHours);
+    }
+
     // Fetch all library hours
     public List<LibraryHours> getAllLibraryHours() {
         return libraryHoursRepository.findAll();
@@ -236,6 +217,7 @@ public class LibraryHoursService {
             entry.put("timeIn", libraryHours.getTimeIn());
             entry.put("timeOut", libraryHours.getTimeOut());
             entry.put("status", libraryHours.getTimeOut() != null ? "Present" : "Incomplete");
+            entry.put("summary", libraryHours.getSummary()); // Add summary to response
             response.add(entry);
         }
         return response;
@@ -253,6 +235,7 @@ public class LibraryHoursService {
                 entry.put("name", user != null ? user.getFirstName() + " " + user.getLastName() : "Unknown");
                 entry.put("timeIn", libraryHours.getTimeIn());
                 entry.put("timeOut", libraryHours.getTimeOut());
+                entry.put("summary", libraryHours.getSummary()); // Add summary to response
                 response.add(entry);
             }
         }
