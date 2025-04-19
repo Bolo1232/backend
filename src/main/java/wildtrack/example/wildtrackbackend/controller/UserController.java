@@ -205,4 +205,17 @@ public class UserController {
                     .body(Map.of("error", "An error occurred while resetting password"));
         }
     }
+
+    @GetMapping("/teachers/by-grade/{gradeLevel}")
+    public ResponseEntity<?> getTeachersByGradeLevel(@PathVariable String gradeLevel) {
+        try {
+            List<User> teachers = userService.getTeachersByGradeLevel(gradeLevel);
+            return ResponseEntity.ok(teachers);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error",
+                            "An error occurred while fetching teachers for grade level: " + e.getMessage()));
+        }
+    }
 }

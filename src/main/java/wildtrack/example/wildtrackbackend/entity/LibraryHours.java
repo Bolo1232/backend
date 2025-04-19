@@ -16,6 +16,7 @@ public class LibraryHours {
 
     @Column(name = "time_in", nullable = false)
     private LocalDateTime timeIn;
+
     @Column(name = "book_title")
     private String bookTitle;
 
@@ -33,16 +34,19 @@ public class LibraryHours {
     @Column(name = "is_counted", nullable = false)
     private Boolean isCounted = false;
 
-    @Column(name = "academic_year")
-    private String academicYear;
+    // Removed academicYear field
 
-    // Add getter and setter
-    public String getAcademicYear() {
-        return academicYear;
+    // Add new summary field (What I Learned)
+    @Column(name = "summary", length = 1000)
+    private String summary;
+
+    // Getter and setter for summary
+    public String getSummary() {
+        return summary;
     }
 
-    public void setAcademicYear(String academicYear) {
-        this.academicYear = academicYear;
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
 
     // Getter and setter for requirementId
@@ -124,5 +128,4 @@ public class LibraryHours {
     public void setTimeOut(LocalDateTime timeOut) {
         this.timeOut = timeOut;
     }
-
 }

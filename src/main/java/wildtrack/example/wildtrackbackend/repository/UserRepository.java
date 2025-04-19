@@ -34,4 +34,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByGradeAndRole(String grade, String role);
 
     boolean existsByIdNumber(String idNumber);
+
 }

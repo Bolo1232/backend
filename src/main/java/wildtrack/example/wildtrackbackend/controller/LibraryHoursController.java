@@ -14,7 +14,6 @@ import wildtrack.example.wildtrackbackend.service.LibraryHoursService;
 
 @RestController
 @RequestMapping("/api/library-hours")
-
 public class LibraryHoursController {
 
     @Autowired
@@ -63,6 +62,28 @@ public class LibraryHoursController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An error occurred while fetching library hours."));
+        }
+    }
+
+    // New endpoint to add summary to library hours
+    @PutMapping("/{id}/add-summary")
+    public ResponseEntity<?> addSummaryToLibraryHours(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> payload) {
+        try {
+            if (!payload.containsKey("summary")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Summary is required"));
+            }
+
+            String summary = payload.get("summary");
+            LibraryHours updated = libraryHoursService.addSummaryToLibraryHours(id, summary);
+
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 

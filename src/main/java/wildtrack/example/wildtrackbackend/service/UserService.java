@@ -23,6 +23,11 @@ public class UserService {
     @Autowired
     private PasswordValidationService passwordValidationService;
 
+    public List<User> getTeachersByGradeLevel(String gradeLevel) {
+        // Find teachers who have the specified grade level assigned
+        return userRepository.findByRoleAndGrade("Teacher", gradeLevel);
+    }
+
     public boolean isIdNumberExists(String idNumber) {
         return userRepository.existsByIdNumber(idNumber);
     }
