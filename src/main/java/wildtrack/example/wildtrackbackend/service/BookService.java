@@ -48,6 +48,12 @@ public class BookService {
             existingBook.setAccessionNumber(updatedBook.getAccessionNumber());
             existingBook.setGenre(updatedBook.getGenre());
 
+            // Update new fields
+            existingBook.setCallNumber(updatedBook.getCallNumber());
+            existingBook.setPlaceOfPublication(updatedBook.getPlaceOfPublication());
+            existingBook.setPublisher(updatedBook.getPublisher());
+            existingBook.setCopyright(updatedBook.getCopyright());
+
             // Only update dateRegistered if it's provided
             if (updatedBook.getDateRegistered() != null) {
                 existingBook.setDateRegistered(updatedBook.getDateRegistered());
