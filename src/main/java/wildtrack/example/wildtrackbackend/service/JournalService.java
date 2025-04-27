@@ -12,6 +12,7 @@ import wildtrack.example.wildtrackbackend.repository.JournalRepository;
 import wildtrack.example.wildtrackbackend.repository.UserRepository;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,7 +79,23 @@ public class JournalService {
      * Get number of books read by user with optional filters
      */
     public List<Map<String, Object>> getNumberOfBooksReadByUser(
-            String idNumber, String dateFrom, String dateTo) {
+            String idNumber, String dateFrom, String dateTo, String academicYear) {
+
+        // Convert academicYear to date range if provided
+        if (academicYear != null && !academicYear.isEmpty()) {
+            try {
+                String[] years = academicYear.split("-");
+                int startYear = Integer.parseInt(years[0]);
+                int endYear = Integer.parseInt(years[1]);
+
+                // Assuming academic year starts in August and ends in July
+                dateFrom = LocalDate.of(startYear, Month.AUGUST, 1).toString(); // August 1st of start year
+                dateTo = LocalDate.of(endYear, Month.JULY, 31).toString(); // July 31st of end year
+            } catch (Exception e) {
+                // Log error and continue with existing date parameters
+                System.err.println("Error parsing academic year: " + academicYear);
+            }
+        }
 
         List<Journal> journalList = journalRepository.findByIdNumberAndActivity(idNumber, "Read Book");
 
@@ -239,7 +256,23 @@ public class JournalService {
 
     // User-specific analytics methods
     public List<Map<String, Object>> getMostReadBooksByUser(
-            String idNumber, String dateFrom, String dateTo) {
+            String idNumber, String dateFrom, String dateTo, String academicYear) {
+
+        // Convert academicYear to date range if provided
+        if (academicYear != null && !academicYear.isEmpty()) {
+            try {
+                String[] years = academicYear.split("-");
+                int startYear = Integer.parseInt(years[0]);
+                int endYear = Integer.parseInt(years[1]);
+
+                // Assuming academic year starts in August and ends in July
+                dateFrom = LocalDate.of(startYear, Month.AUGUST, 1).toString(); // August 1st of start year
+                dateTo = LocalDate.of(endYear, Month.JULY, 31).toString(); // July 31st of end year
+            } catch (Exception e) {
+                // Log error and continue with existing date parameters
+                System.err.println("Error parsing academic year: " + academicYear);
+            }
+        }
 
         List<Journal> userJournals = journalRepository.findByIdNumberAndActivity(idNumber, "Read Book");
 
@@ -293,7 +326,23 @@ public class JournalService {
     }
 
     public List<Map<String, Object>> getHighestRatedBooksByUser(
-            String idNumber, String dateFrom, String dateTo) {
+            String idNumber, String dateFrom, String dateTo, String academicYear) {
+
+        // Convert academicYear to date range if provided
+        if (academicYear != null && !academicYear.isEmpty()) {
+            try {
+                String[] years = academicYear.split("-");
+                int startYear = Integer.parseInt(years[0]);
+                int endYear = Integer.parseInt(years[1]);
+
+                // Assuming academic year starts in August and ends in July
+                dateFrom = LocalDate.of(startYear, Month.AUGUST, 1).toString(); // August 1st of start year
+                dateTo = LocalDate.of(endYear, Month.JULY, 31).toString(); // July 31st of end year
+            } catch (Exception e) {
+                // Log error and continue with existing date parameters
+                System.err.println("Error parsing academic year: " + academicYear);
+            }
+        }
 
         List<Journal> userJournals = journalRepository.findByIdNumberAndActivity(idNumber, "Read Book");
 

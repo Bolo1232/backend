@@ -26,11 +26,11 @@ public class StudentAnalyticsController {
     public ResponseEntity<?> getNumberOfBooksReadByUser(
             @PathVariable String idNumber,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String academicYear) {
         try {
-            // Removed academicYear parameter
             List<Map<String, Object>> booksReadData = journalService.getNumberOfBooksReadByUser(
-                    idNumber, dateFrom, dateTo);
+                    idNumber, dateFrom, dateTo, academicYear);
             return ResponseEntity.ok(booksReadData);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,10 +43,11 @@ public class StudentAnalyticsController {
     public ResponseEntity<?> getTotalMinutesSpentByUser(
             @PathVariable String idNumber,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String academicYear) {
         try {
             List<Map<String, Object>> minutesSpentData = libraryHoursService.getTotalMinutesSpentByUser(
-                    idNumber, dateFrom, dateTo);
+                    idNumber, dateFrom, dateTo, academicYear);
             return ResponseEntity.ok(minutesSpentData);
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,7 +56,7 @@ public class StudentAnalyticsController {
         }
     }
 
-    // Global analytics endpoints
+    // Global analytics endpoints remain unchanged
     @GetMapping("/most-read-books")
     public ResponseEntity<?> getMostReadBooks() {
         try {
@@ -85,11 +86,11 @@ public class StudentAnalyticsController {
     public ResponseEntity<?> getMostReadBooksByUser(
             @PathVariable String idNumber,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String academicYear) {
         try {
-            // Removed academicYear parameter
             List<Map<String, Object>> mostReadBooks = journalService.getMostReadBooksByUser(
-                    idNumber, dateFrom, dateTo);
+                    idNumber, dateFrom, dateTo, academicYear);
             return ResponseEntity.ok(mostReadBooks);
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,11 +103,11 @@ public class StudentAnalyticsController {
     public ResponseEntity<?> getHighestRatedBooksByUser(
             @PathVariable String idNumber,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) String academicYear) {
         try {
-            // Removed academicYear parameter
             List<Map<String, Object>> highestRatedBooks = journalService.getHighestRatedBooksByUser(
-                    idNumber, dateFrom, dateTo);
+                    idNumber, dateFrom, dateTo, academicYear);
             return ResponseEntity.ok(highestRatedBooks);
         } catch (Exception e) {
             e.printStackTrace();
