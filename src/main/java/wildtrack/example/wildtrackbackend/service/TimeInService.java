@@ -2,6 +2,7 @@ package wildtrack.example.wildtrackbackend.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,18 @@ public class TimeInService {
     private TimeInRepository timeInRepository;
 
     public void recordTimeIn(String idNumber) {
+        // First, check if user has any incomplete sessions requiring book assignment
+        List<LibraryHours> incompleteSessionsList = libraryHoursRepository
+                .findByIdNumberAndRequiresBookAssignmentTrue(idNumber);
+
+        if (!incompleteSessionsList.isEmpty()) {
+            // User has incomplete sessions, prevent time-in and notify
+            throw new RuntimeException(
+                    "You have " + incompleteSessionsList.size() +
+                            " previous library session(s) that require a book assignment. " +
+                            "Please add a book to these sessions from your library hours page before timing in again.");
+        }
+
         // Check current time in Philippines timezone
         LocalDateTime currentTime = LocalDateTime.now(PHILIPPINES_ZONE);
 
@@ -72,6 +85,7 @@ public class TimeInService {
         LibraryHours libraryHours = new LibraryHours();
         libraryHours.setIdNumber(idNumber);
         libraryHours.setTimeIn(currentTime);
+        libraryHours.setRequiresBookAssignment(false); // Initialize as false
         libraryHoursRepository.save(libraryHours);
     }
 

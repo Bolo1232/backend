@@ -26,8 +26,6 @@ public class AutoTimeOutService {
 
     /**
      * Automatically time out all users at 5:00 PM Manila time
-     * cron expression: second minute hour day-of-month month day-of-week
-     * "0 0 17 * * *" = Run at 5:00 PM (17:00) every day
      */
     @Scheduled(cron = "0 0 17 * * *", zone = "Asia/Manila")
     @Transactional
@@ -38,26 +36,27 @@ public class AutoTimeOutService {
         LocalDateTime closeTime = LocalDateTime.now(PHILIPPINES_ZONE);
 
         for (LibraryHours session : openSessions) {
-            // Skip sessions that don't have a book assigned
-            if (session.getBookTitle() == null || session.getBookTitle().trim().isEmpty()) {
-                continue;
-            }
-
-            // Set time-out to 5:00 PM
+            // Set time-out to current time for ALL sessions
             session.setTimeOut(closeTime);
 
             // Calculate minutes spent
             long minutes = java.time.Duration.between(session.getTimeIn(), session.getTimeOut()).toMinutes();
             session.setMinutesCounted((int) minutes);
 
-            // Set isCounted to true to ensure it's included in reports
-            session.setIsCounted(true);
+            // If this session has a book assigned, mark it as counted
+            // Otherwise, mark it as requiring book assignment
+            if (session.getBookTitle() != null && !session.getBookTitle().trim().isEmpty()) {
+                session.setIsCounted(true);
 
-            // Save the updated record
-            LibraryHours savedRecord = libraryHoursRepository.save(session);
-
-            // Update library requirement progress with this time
-            libraryRequirementProgressService.recordLibraryTime(savedRecord.getId());
+                // Only update library requirement progress for sessions with books
+                LibraryHours savedRecord = libraryHoursRepository.save(session);
+                libraryRequirementProgressService.recordLibraryTime(savedRecord.getId());
+            } else {
+                // For sessions without books, mark them specially
+                session.setIsCounted(false);
+                session.setRequiresBookAssignment(true); // Add this field to LibraryHours entity
+                libraryHoursRepository.save(session);
+            }
         }
     }
 }
