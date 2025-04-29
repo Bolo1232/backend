@@ -34,11 +34,20 @@ public class LibraryHours {
     @Column(name = "is_counted", nullable = false)
     private Boolean isCounted = false;
 
-    // Removed academicYear field
-
-    // Add new summary field (What I Learned)
     @Column(name = "summary", length = 1000)
     private String summary;
+
+    @Column(name = "requires_book_assignment")
+    private Boolean requiresBookAssignment = false;
+
+    // Add getter and setter
+    public Boolean getRequiresBookAssignment() {
+        return requiresBookAssignment;
+    }
+
+    public void setRequiresBookAssignment(Boolean requiresBookAssignment) {
+        this.requiresBookAssignment = requiresBookAssignment;
+    }
 
     // Getter and setter for summary
     public String getSummary() {

@@ -66,4 +66,6 @@ public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long
         long countDistinctUsersByIdNumberInAndTimeInBetween(List<String> idNumbers, LocalDateTime startTime,
                         LocalDateTime endTime);
 
+        List<LibraryHours> findByIdNumberAndRequiresBookAssignmentTrue(String idNumber);
+
 }

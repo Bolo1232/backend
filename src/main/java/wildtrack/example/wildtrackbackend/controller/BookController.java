@@ -109,6 +109,8 @@ public class BookController {
                     .orElseThrow(() -> new RuntimeException("LibraryHours record not found."));
 
             libraryHours.setBookTitle(book.getTitle());
+            // Set requiresBookAssignment to false when assigning a book
+            libraryHours.setRequiresBookAssignment(false);
             libraryHoursService.saveLibraryHours(libraryHours);
 
             return ResponseEntity.ok(Map.of("message", "Book assigned to library hours successfully."));
