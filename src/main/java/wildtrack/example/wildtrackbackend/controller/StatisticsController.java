@@ -796,4 +796,45 @@ public class StatisticsController {
 
         return filteredUsers;
     }
+
+    @GetMapping("/active-students")
+    public ResponseEntity<?> getActiveStudents() {
+        try {
+            // Get active library hours entries (with timeIn but no timeOut)
+            List<LibraryHours> activeEntries = libraryHoursRepository.findByTimeOutIsNull();
+
+            // Extract student IDs
+            List<String> studentIds = activeEntries.stream()
+                    .map(LibraryHours::getIdNumber)
+                    .collect(Collectors.toList());
+
+            // Get student details from user repository
+            List<Map<String, Object>> activeStudents = new ArrayList<>();
+            for (String id : studentIds) {
+                User student = userRepository.findByIdNumber(id).orElse(null);
+                if (student != null && "Student".equals(student.getRole())) {
+                    Map<String, Object> studentData = new HashMap<>();
+                    studentData.put("id", student.getId());
+                    studentData.put("idNumber", student.getIdNumber());
+                    studentData.put("fullName", student.getFullName());
+                    studentData.put("grade", student.getGrade());
+                    studentData.put("section", student.getSection());
+                    // Get the timeIn for this student
+                    LibraryHours entry = activeEntries.stream()
+                            .filter(e -> e.getIdNumber().equals(student.getIdNumber()))
+                            .findFirst().orElse(null);
+                    if (entry != null) {
+                        studentData.put("timeIn", entry.getTimeIn().toString());
+                    }
+                    activeStudents.add(studentData);
+                }
+            }
+
+            return ResponseEntity.ok(activeStudents);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Failed to fetch active students"));
+        }
+    }
 }
