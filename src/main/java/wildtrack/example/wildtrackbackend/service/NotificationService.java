@@ -58,7 +58,7 @@ public class NotificationService {
         // Also create a notification for the teacher who created the requirement
         if (libraryHours.getCreatedById() != null) {
             String teacherMessage = String.format(
-                    "Your library hours requirement for %s: %d minutes of %s reading due by %s (Quarter %s) has been approved.",
+                    "Your library hours requirement for %s: %d minutes of %s reading due by %s (Quarter %s) has been created.",
                     libraryHours.getGradeLevel(),
                     libraryHours.getMinutes(),
                     libraryHours.getSubject(),
@@ -67,9 +67,72 @@ public class NotificationService {
 
             Notification teacherNotification = new Notification(
                     libraryHours.getCreatedById(),
-                    "Library Hours Requirement Approved",
+                    "Library Hours Requirement Created",
                     teacherMessage,
                     "LIBRARY_HOURS_APPROVED",
+                    libraryHours.getId());
+
+            notificationRepository.save(teacherNotification);
+        }
+
+        // Return all created notifications
+        return notificationRepository.findByReferenceId(libraryHours.getId());
+    }
+
+    // Create notifications for students when a library hours requirement is updated
+    public List<Notification> createLibraryHoursUpdateNotification(SetLibraryHours libraryHours) {
+        // Only create notifications for approved library hours
+        if (!"APPROVED".equals(libraryHours.getApprovalStatus())) {
+            return null;
+        }
+
+        String formattedDate = libraryHours.getDeadline() != null
+                ? libraryHours.getDeadline().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
+                : "No deadline";
+
+        String title = "Library Requirement Updated";
+        String message = String.format(
+                "The %s reading requirement for %s Quarter has been updated: %d minutes due by %s",
+                libraryHours.getSubject(),
+                libraryHours.getQuarter().getValue(),
+                libraryHours.getMinutes(),
+                formattedDate);
+
+        if (libraryHours.getTask() != null && !libraryHours.getTask().isEmpty()) {
+            message += String.format("\n\nTask: %s", libraryHours.getTask());
+        }
+
+        // Find all students in the specified grade level
+        List<User> studentsInGrade = userRepository.findByRoleAndGrade("Student", libraryHours.getGradeLevel());
+
+        // Create individual notifications for each student
+        for (User student : studentsInGrade) {
+            Notification notification = new Notification(
+                    student.getId(),
+                    title,
+                    message,
+                    "LIBRARY_HOURS_UPDATED",
+                    libraryHours.getId());
+
+            notificationRepository.save(notification);
+        }
+
+        // Also create a notification for the teacher who created the requirement (if
+        // different from updater)
+        if (libraryHours.getCreatedById() != null) {
+            String teacherMessage = String.format(
+                    "Your library hours requirement for %s: %d minutes of %s reading (Quarter %s) has been updated. New deadline: %s",
+                    libraryHours.getGradeLevel(),
+                    libraryHours.getMinutes(),
+                    libraryHours.getSubject(),
+                    libraryHours.getQuarter().getValue(),
+                    formattedDate);
+
+            Notification teacherNotification = new Notification(
+                    libraryHours.getCreatedById(),
+                    "Library Hours Requirement Updated",
+                    teacherMessage,
+                    "LIBRARY_HOURS_UPDATED",
                     libraryHours.getId());
 
             notificationRepository.save(teacherNotification);

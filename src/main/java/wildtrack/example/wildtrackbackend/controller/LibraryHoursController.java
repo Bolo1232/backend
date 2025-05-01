@@ -65,67 +65,25 @@ public class LibraryHoursController {
         }
     }
 
-    // Modified to also handle requiresBookAssignment flag
+    // New endpoint to add summary to library hours
     @PutMapping("/{id}/add-summary")
     public ResponseEntity<?> addSummaryToLibraryHours(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> payload) {
+            @RequestBody Map<String, String> payload) {
         try {
             if (!payload.containsKey("summary")) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Summary is required"));
             }
 
-            String summary = (String) payload.get("summary");
-
-            // Check if requiresBookAssignment flag is provided
-            Boolean requiresBookAssignment = payload.containsKey("requiresBookAssignment")
-                    ? (Boolean) payload.get("requiresBookAssignment")
-                    : false; // Default to false if not provided
-
-            LibraryHours libraryHours = libraryHoursService.getLibraryHoursById(id)
-                    .orElseThrow(() -> new RuntimeException("LibraryHours record not found."));
-
-            libraryHours.setSummary(summary);
-            libraryHours.setRequiresBookAssignment(requiresBookAssignment);
-            LibraryHours updated = libraryHoursService.saveLibraryHours(libraryHours);
+            String summary = payload.get("summary");
+            LibraryHours updated = libraryHoursService.addSummaryToLibraryHours(id, summary);
 
             return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // New endpoint to update flags for library hours
-    @PutMapping("/{id}/update-flags")
-    public ResponseEntity<?> updateLibraryHoursFlags(
-            @PathVariable Long id,
-            @RequestBody Map<String, Boolean> payload) {
-        try {
-            Boolean requiresBookAssignment = payload.get("requiresBookAssignment");
-
-            if (requiresBookAssignment == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "requiresBookAssignment flag is required"));
-            }
-
-            LibraryHours libraryHours = libraryHoursService.getLibraryHoursById(id)
-                    .orElseThrow(() -> new RuntimeException("LibraryHours record not found."));
-
-            libraryHours.setRequiresBookAssignment(requiresBookAssignment);
-            LibraryHours updated = libraryHoursService.saveLibraryHours(libraryHours);
-
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An unexpected error occurred."));
         }
     }
 

@@ -2,10 +2,18 @@ package wildtrack.example.wildtrackbackend.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "library_requirement_progress")
 public class LibraryRequirementProgress {
+
+    private static final Logger logger = Logger.getLogger(LibraryRequirementProgress.class.getName());
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,9 +49,11 @@ public class LibraryRequirementProgress {
     @Column(name = "last_updated")
     private LocalDate lastUpdated;
 
-    // Add academic year field
     @Column(name = "academic_year")
     private String academicYear;
+
+    @Column(name = "contributing_library_hours_ids", length = 1000)
+    private String contributingLibraryHoursIds = "";
 
     // Default constructor
     public LibraryRequirementProgress() {
@@ -65,6 +75,7 @@ public class LibraryRequirementProgress {
         this.deadline = deadline;
         this.isCompleted = false;
         this.lastUpdated = LocalDate.now();
+        this.contributingLibraryHoursIds = "";
         setAcademicYearFromQuarter();
     }
 
@@ -105,14 +116,67 @@ public class LibraryRequirementProgress {
         return Math.max(0, requiredMinutes - minutesRendered);
     }
 
-    // Determine status - simplified without approval status
+    // Determine status - updated to include Not Started status
     public String getStatus() {
         if (isCompleted) {
             return "Completed";
         } else if (deadline != null && deadline.isBefore(LocalDate.now())) {
             return "Overdue";
-        } else {
+        } else if (minutesRendered > 0) {
+            // If they've logged any time but not completed
             return "In Progress";
+        } else {
+            // No minutes recorded yet
+            return "Not Started";
+        }
+    }
+
+    // Helper methods for managing contributing library hours ids
+    public List<Long> getContributingLibraryHoursIdsList() {
+        if (contributingLibraryHoursIds == null || contributingLibraryHoursIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            return Arrays.stream(contributingLibraryHoursIds.split(","))
+                    .filter(s -> !s.isEmpty()) // Filter out empty strings
+                    .map(s -> {
+                        try {
+                            return Long.parseLong(s.trim());
+                        } catch (NumberFormatException e) {
+                            logger.warning("Invalid ID in contributing_library_hours_ids: " + s);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull) // Filter out any parsing failures
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.severe("Error parsing contributing_library_hours_ids: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    public void addContributingLibraryHoursId(Long id) {
+        if (id == null) {
+            return; // Skip null IDs
+        }
+
+        List<Long> ids = getContributingLibraryHoursIdsList();
+
+        // Validate maximum length to prevent overflows
+        if (ids.size() >= 1000) {
+            // If too many IDs, remove oldest ones to make space
+            while (ids.size() >= 1000) {
+                ids.remove(0);
+            }
+        }
+
+        // Avoid duplicates
+        if (!ids.contains(id)) {
+            ids.add(id);
+            this.contributingLibraryHoursIds = ids.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
         }
     }
 
@@ -219,5 +283,13 @@ public class LibraryRequirementProgress {
 
     public void setAcademicYear(String academicYear) {
         this.academicYear = academicYear;
+    }
+
+    public String getContributingLibraryHoursIds() {
+        return contributingLibraryHoursIds;
+    }
+
+    public void setContributingLibraryHoursIds(String contributingLibraryHoursIds) {
+        this.contributingLibraryHoursIds = contributingLibraryHoursIds;
     }
 }

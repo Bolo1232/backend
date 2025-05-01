@@ -1,5 +1,6 @@
 package wildtrack.example.wildtrackbackend.service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -71,8 +72,7 @@ public class LibraryRequirementProgressService {
         logger.info("Using grade join date: " + gradeJoinDate + " for student: " + studentId);
 
         // Get all APPROVED requirements for this grade level
-        List<SetLibraryHours> allRequirements = requirementRepository.findByGradeLevelAndApprovalStatus(gradeLevel,
-                "APPROVED");
+        List<SetLibraryHours> allRequirements = requirementRepository.findByGradeLevel(gradeLevel);
 
         // IMPORTANT: Filter requirements to ONLY include those created AFTER the
         // student joined this grade level
@@ -184,12 +184,199 @@ public class LibraryRequirementProgressService {
     }
 
     /**
+     * Get active progress with timing status
+     * This method returns progress with real-time status information based on
+     * current library hours
+     */
+    public List<Map<String, Object>> getActiveProgressWithTimingStatus(String studentId) {
+        // Get all the student's requirements
+        List<LibraryRequirementProgress> progress = progressRepository.findByStudentId(studentId);
+
+        // Check if student is currently timed in
+        Optional<LibraryHours> activeSession = libraryHoursRepository.findLatestByIdNumber(studentId)
+                .filter(lh -> lh.getTimeOut() == null); // No timeout means active session
+
+        // MODIFIED: Sort requirements by deadline (earliest first) instead of quarter
+        progress.sort((a, b) -> {
+            // Handle null deadlines - put them at the end
+            if (a.getDeadline() == null && b.getDeadline() == null) {
+                return 0;
+            } else if (a.getDeadline() == null) {
+                return 1;
+            } else if (b.getDeadline() == null) {
+                return -1;
+            }
+            // Otherwise sort by deadline (earliest first)
+            return a.getDeadline().compareTo(b.getDeadline());
+        });
+
+        // Get the first incomplete requirement by deadline priority
+        // This will be our primary requirement based on priority
+        Optional<LibraryRequirementProgress> highestPriorityIncomplete = progress.stream()
+                .filter(req -> !req.getIsCompleted())
+                .findFirst();
+
+        // Set the active requirement ID to the highest priority one
+        Long activeRequirementId = null;
+        if (highestPriorityIncomplete.isPresent()) {
+            activeRequirementId = highestPriorityIncomplete.get().getId();
+        }
+
+        // If a student is currently timed in and has a specific subject
+        boolean userIsActive = false;
+        final String activeSubject; // Declare as final for use in lambda expression
+
+        if (activeSession.isPresent() && activeSession.get().getSubject() != null
+                && !activeSession.get().getSubject().isEmpty()) {
+            userIsActive = true;
+            activeSubject = activeSession.get().getSubject(); // Assign once, make it effectively final
+
+            // If they have a specific subject selected, find matching requirements
+            // MODIFIED: Get all incomplete requirements for this subject, sorted by
+            // deadline
+            List<LibraryRequirementProgress> matchingSubjectReqs = progress.stream()
+                    .filter(req -> !req.getIsCompleted() &&
+                            activeSubject.equals(req.getSubject()))
+                    .sorted((a, b) -> {
+                        // Sort by deadline (earliest first)
+                        if (a.getDeadline() == null && b.getDeadline() == null) {
+                            return 0;
+                        } else if (a.getDeadline() == null) {
+                            return 1;
+                        } else if (b.getDeadline() == null) {
+                            return -1;
+                        }
+                        return a.getDeadline().compareTo(b.getDeadline());
+                    })
+                    .toList(); // Using toList() instead of collect(Collectors.toList())
+
+            // If there are matching requirements for this subject, use the highest priority
+            // one (earliest deadline)
+            if (!matchingSubjectReqs.isEmpty()) {
+                activeRequirementId = matchingSubjectReqs.get(0).getId();
+            }
+        } else {
+            activeSubject = null; // Initialize with null if no active session
+        }
+
+        // Convert to response format with additional status information
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (LibraryRequirementProgress req : progress) {
+            Map<String, Object> item = new HashMap<>();
+
+            // Copy all properties
+            item.put("id", req.getId());
+            item.put("requirementId", req.getRequirementId());
+            item.put("studentId", req.getStudentId());
+            item.put("subject", req.getSubject());
+            item.put("quarter", req.getQuarter());
+            item.put("gradeLevel", req.getGradeLevel());
+            item.put("requiredMinutes", req.getRequiredMinutes());
+            item.put("minutesRendered", req.getMinutesRendered());
+            item.put("remainingMinutes", req.getRemainingMinutes());
+            item.put("deadline", req.getDeadline());
+            item.put("isCompleted", req.getIsCompleted());
+            item.put("progressPercentage", req.getProgressPercentage());
+
+            // Fetch the original requirement to get task and creator information
+            Optional<SetLibraryHours> libraryHoursOpt = requirementRepository.findById(req.getRequirementId());
+            if (libraryHoursOpt.isPresent()) {
+                SetLibraryHours libraryHours = libraryHoursOpt.get();
+
+                // Set the task field
+                item.put("task", libraryHours.getTask());
+
+                // Get creator information if available
+                if (libraryHours.getCreatedById() != null) {
+                    Optional<User> creatorOpt = userRepository.findById(libraryHours.getCreatedById());
+                    if (creatorOpt.isPresent()) {
+                        User creator = creatorOpt.get();
+                        item.put("creatorName", creator.getFirstName() + " " + creator.getLastName());
+                    } else {
+                        item.put("creatorName", "Unknown Teacher");
+                    }
+                } else {
+                    item.put("creatorName", "Unknown Teacher");
+                }
+            } else {
+                item.put("task", null);
+                item.put("creatorName", "Unknown Teacher");
+            }
+
+            // IMPROVED STATUS LOGIC:
+            String status;
+
+            if (req.getIsCompleted()) {
+                // If requirement is completed, it's always "Completed"
+                status = "Completed";
+            } else if (userIsActive && activeRequirementId != null && req.getId().equals(activeRequirementId)) {
+                // If user is actively timed in and this is the active requirement, it's "In
+                // Progress"
+                // even if it has 0 minutes rendered
+                status = "In Progress";
+            } else if (req.getMinutesRendered() <= 0) {
+                // If not active and no minutes rendered, it's "Not Started"
+                status = "Not Started";
+            } else if (activeRequirementId != null && req.getId().equals(activeRequirementId)) {
+                // If this is the highest priority requirement with minutes but user isn't timed
+                // in
+                status = req.getDeadline() != null && req.getDeadline().isBefore(LocalDate.now())
+                        ? "Overdue"
+                        : "In Progress";
+            } else if (req.getDeadline() != null && req.getDeadline().isBefore(LocalDate.now())) {
+                // Lower priority requirement with a past deadline
+                status = "Overdue";
+            } else if (req.getMinutesRendered() > 0) {
+                // If this requirement has minutes but isn't active/highest priority
+                status = "Paused";
+            } else {
+                // Fallback to entity status
+                status = req.getStatus();
+            }
+
+            item.put("status", status);
+
+            // Add count of contributing sessions
+            List<Long> contributingSessions = req.getContributingLibraryHoursIdsList();
+            item.put("contributingSessionsCount", contributingSessions.size());
+
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    /**
+     * Helper method to get current quarter based on date
+     */
+    private String getCurrentQuarter() {
+        int month = LocalDate.now().getMonthValue();
+
+        if (month >= 8 && month <= 10) {
+            return "First";
+        } else if (month >= 11 || month <= 1) {
+            return "Second";
+        } else if (month >= 2 && month <= 4) {
+            return "Third";
+        } else {
+            return "Fourth";
+        }
+    }
+
+    /**
      * Record library time for a student
      * This should be called when a student times out
      */
     @Transactional
     public void recordLibraryTime(Long libraryHoursId) {
         logger.info("Recording library time for library hours ID: " + libraryHoursId);
+
+        // Input validation
+        if (libraryHoursId == null) {
+            logger.warning("NULL library hours ID provided");
+            return;
+        }
 
         // Get the library hours record
         Optional<LibraryHours> libraryHoursOpt = libraryHoursRepository.findById(libraryHoursId);
@@ -199,6 +386,13 @@ public class LibraryRequirementProgressService {
         }
 
         LibraryHours hours = libraryHoursOpt.get();
+
+        // Check if this session has already been processed
+        if (hours.getRequirementId() != null && hours.getIsCounted()) {
+            logger.info("Library hours already counted for a requirement: " + libraryHoursId);
+            return;
+        }
+
         String studentId = hours.getIdNumber();
         String subject = hours.getSubject();
 
@@ -227,14 +421,21 @@ public class LibraryRequirementProgressService {
             List<LibraryRequirementProgress> subjectRequirements = progressRepository
                     .findByStudentIdAndSubject(studentId, subject);
 
-            // Sort by quarter (First, Second, Third, Fourth)
+            // MODIFIED: Sort by deadline (earliest first) instead of quarter
             subjectRequirements.sort((a, b) -> {
-                int quarterA = getQuarterValue(a.getQuarter());
-                int quarterB = getQuarterValue(b.getQuarter());
-                return Integer.compare(quarterA, quarterB);
+                // Handle null deadlines - put them at the end
+                if (a.getDeadline() == null && b.getDeadline() == null) {
+                    return 0;
+                } else if (a.getDeadline() == null) {
+                    return 1;
+                } else if (b.getDeadline() == null) {
+                    return -1;
+                }
+                // Otherwise sort by deadline (earliest first)
+                return a.getDeadline().compareTo(b.getDeadline());
             });
 
-            // Find first incomplete requirement for this subject
+            // Always choose the earliest deadline that isn't completed
             progressOpt = subjectRequirements.stream()
                     .filter(progress -> !progress.getIsCompleted())
                     .findFirst();
@@ -242,15 +443,21 @@ public class LibraryRequirementProgressService {
             // Get all progress records for the student
             List<LibraryRequirementProgress> allProgress = progressRepository.findByStudentId(studentId);
 
-            // Sort by quarter (First, Second, Third, Fourth)
+            // MODIFIED: Sort by deadline (earliest first) instead of quarter
             allProgress.sort((a, b) -> {
-                // Convert quarter names to numerical values for sorting
-                int quarterA = getQuarterValue(a.getQuarter());
-                int quarterB = getQuarterValue(b.getQuarter());
-                return Integer.compare(quarterA, quarterB);
+                // Handle null deadlines - put them at the end
+                if (a.getDeadline() == null && b.getDeadline() == null) {
+                    return 0;
+                } else if (a.getDeadline() == null) {
+                    return 1;
+                } else if (b.getDeadline() == null) {
+                    return -1;
+                }
+                // Otherwise sort by deadline (earliest first)
+                return a.getDeadline().compareTo(b.getDeadline());
             });
 
-            // Find the first incomplete requirement
+            // Find the first incomplete requirement by deadline priority
             progressOpt = allProgress.stream()
                     .filter(progress -> !progress.getIsCompleted())
                     .findFirst();
@@ -262,6 +469,13 @@ public class LibraryRequirementProgressService {
 
             // Add minutes
             progress.addMinutes(minutes);
+
+            // Add the library hours ID to the contributing sessions
+            progress.addContributingLibraryHoursId(libraryHoursId);
+
+            // Update the library hours record to point to this requirement
+            hours.setRequirementId(progress.getId());
+            libraryHoursRepository.save(hours);
 
             // Save the updated progress
             progressRepository.save(progress);
@@ -380,21 +594,171 @@ public class LibraryRequirementProgressService {
     }
 
     /**
-     * Helper method to convert quarter names to numerical values for sorting
+     * Get detailed information about a requirement including contributing library
+     * hours sessions
      */
-    private int getQuarterValue(String quarter) {
-        switch (quarter) {
-            case "First":
-                return 1;
-            case "Second":
-                return 2;
-            case "Third":
-                return 3;
-            case "Fourth":
-                return 4;
-            default:
-                return 5; // For unknown quarters
+    public Map<String, Object> getRequirementDetailsWithContributingSessions(Long requirementId, Integer page,
+            Integer size) {
+        Optional<LibraryRequirementProgress> progressOpt = progressRepository.findById(requirementId);
+
+        if (!progressOpt.isPresent()) {
+            throw new RuntimeException("Requirement not found with ID: " + requirementId);
         }
+
+        LibraryRequirementProgress progress = progressOpt.get();
+        Map<String, Object> details = new HashMap<>();
+
+        // Add basic requirement details
+        details.put("id", progress.getId());
+        details.put("studentId", progress.getStudentId());
+        details.put("subject", progress.getSubject());
+        details.put("quarter", progress.getQuarter());
+        details.put("gradeLevel", progress.getGradeLevel());
+        details.put("requiredMinutes", progress.getRequiredMinutes());
+        details.put("minutesRendered", progress.getMinutesRendered());
+        details.put("remainingMinutes", progress.getRemainingMinutes());
+        details.put("deadline", progress.getDeadline());
+        details.put("isCompleted", progress.getIsCompleted());
+        details.put("progressPercentage", progress.getProgressPercentage());
+        details.put("status", progress.getStatus());
+
+        // Get task information
+        Optional<SetLibraryHours> libraryHoursOpt = requirementRepository.findById(progress.getRequirementId());
+        if (libraryHoursOpt.isPresent()) {
+            SetLibraryHours requirement = libraryHoursOpt.get();
+            details.put("task", requirement.getTask());
+
+            // Get creator information if available
+            if (requirement.getCreatedById() != null) {
+                Optional<User> creatorOpt = userRepository.findById(requirement.getCreatedById());
+                if (creatorOpt.isPresent()) {
+                    User creator = creatorOpt.get();
+                    details.put("creatorName", creator.getFirstName() + " " + creator.getLastName());
+                } else {
+                    details.put("creatorName", "Unknown Teacher");
+                }
+            } else {
+                details.put("creatorName", "Unknown Teacher");
+            }
+        } else {
+            details.put("task", null);
+            details.put("creatorName", "Unknown Teacher");
+        }
+
+        // Get contributing library hours sessions with pagination
+        List<Long> allContributingSessionIds = progress.getContributingLibraryHoursIdsList();
+
+        // Calculate pagination values
+        int pageNum = (page != null && page >= 0) ? page : 0;
+        int pageSize = (size != null && size > 0) ? size : 10; // Default page size
+
+        // Calculate total pages
+        int totalItems = allContributingSessionIds.size();
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+
+        // Get subset of IDs for the requested page
+        List<Long> paginatedIds;
+        int fromIndex = pageNum * pageSize;
+        if (fromIndex >= allContributingSessionIds.size()) {
+            paginatedIds = new ArrayList<>();
+        } else {
+            int toIndex = Math.min(fromIndex + pageSize, allContributingSessionIds.size());
+            paginatedIds = allContributingSessionIds.subList(fromIndex, toIndex);
+        }
+
+        List<Map<String, Object>> contributingSessions = new ArrayList<>();
+
+        // Only process the IDs for the current page
+        for (Long sessionId : paginatedIds) {
+            Optional<LibraryHours> sessionOpt = libraryHoursRepository.findById(sessionId);
+            if (sessionOpt.isPresent()) {
+                LibraryHours session = sessionOpt.get();
+                Map<String, Object> sessionDetails = new HashMap<>();
+
+                sessionDetails.put("id", session.getId());
+                sessionDetails.put("timeIn", session.getTimeIn());
+                sessionDetails.put("timeOut", session.getTimeOut());
+                sessionDetails.put("bookTitle", session.getBookTitle());
+                sessionDetails.put("summary", session.getSummary());
+
+                // Calculate minutes for this session
+                int sessionMinutes = 0;
+                if (session.getTimeIn() != null && session.getTimeOut() != null) {
+                    sessionMinutes = (int) Duration.between(session.getTimeIn(), session.getTimeOut()).toMinutes();
+                }
+                sessionDetails.put("minutes", sessionMinutes);
+
+                // Calculate contribution percentage
+                double contributionPercentage = 0;
+                if (progress.getRequiredMinutes() > 0) {
+                    contributionPercentage = (double) sessionMinutes / progress.getRequiredMinutes() * 100;
+                }
+                sessionDetails.put("contributionPercentage", Math.min(100.0, contributionPercentage));
+
+                contributingSessions.add(sessionDetails);
+            }
+        }
+
+        // Sort sessions by date (newest first)
+        contributingSessions.sort((a, b) -> {
+            LocalDateTime timeA = (LocalDateTime) a.get("timeIn");
+            LocalDateTime timeB = (LocalDateTime) b.get("timeIn");
+            return timeB.compareTo(timeA);
+        });
+
+        details.put("contributingSessions", contributingSessions);
+        details.put("pagination", Map.of(
+                "totalItems", totalItems,
+                "totalPages", totalPages,
+                "currentPage", pageNum,
+                "pageSize", pageSize));
+
+        return details;
+    }
+
+    /**
+     * Migrate existing library hours data to link with requirements
+     * This method processes all library hours records that have a requirement ID
+     * assigned
+     * and adds them to the contributing sessions list of the corresponding
+     * requirement
+     */
+    @Transactional
+    public void migrateExistingLibraryHoursToRequirements() {
+        logger.info("Starting migration of existing library hours to requirement contributing sessions");
+
+        // Get all library hours with a requirementId set
+        List<LibraryHours> libraryHoursWithRequirement = libraryHoursRepository.findByRequirementIdIsNotNull();
+
+        int processed = 0;
+        int errors = 0;
+
+        for (LibraryHours hours : libraryHoursWithRequirement) {
+            try {
+                // Find the requirement
+                Optional<LibraryRequirementProgress> progressOpt = progressRepository
+                        .findById(hours.getRequirementId());
+
+                if (progressOpt.isPresent()) {
+                    LibraryRequirementProgress progress = progressOpt.get();
+
+                    // Add the library hours ID to the contributing sessions
+                    progress.addContributingLibraryHoursId(hours.getId());
+
+                    // Save the updated progress
+                    progressRepository.save(progress);
+                    processed++;
+                } else {
+                    logger.warning("Referenced requirement not found: " + hours.getRequirementId());
+                    errors++;
+                }
+            } catch (Exception e) {
+                logger.severe("Error processing library hours " + hours.getId() + ": " + e.getMessage());
+                errors++;
+            }
+        }
+
+        logger.info("Migration completed. Processed: " + processed + ", Errors: " + errors);
     }
 
     /**

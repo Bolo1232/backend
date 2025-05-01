@@ -23,6 +23,9 @@ public interface LibraryRequirementProgressRepository extends JpaRepository<Libr
         List<LibraryRequirementProgress> findByStudentIdAndSubjectAndQuarter(String studentId, String subject,
                         String quarter);
 
+        // NEW: Find all progress records linked to a specific requirement
+        List<LibraryRequirementProgress> findByRequirementId(Long requirementId);
+
         // Count by student ID
         long countByStudentId(String studentId);
 

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -101,6 +102,40 @@ public class ActivityLogService {
                 subject, gradeLevel, quarter);
 
         logActivity(userId, "LIBRARY_HOURS_CREATED", description);
+    }
+
+    /**
+     * Log when a teacher updates a library hours requirement
+     */
+    public void logLibraryHoursUpdate(Long userId, String subject, String gradeLevel, String quarter) {
+        try {
+            // Get the user to include their name in the log
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                return;
+            }
+
+            User user = userOpt.get();
+
+            // Create description for the activity log
+            String description = String.format(
+                    "Updated library hours requirement for %s %s, %s Quarter",
+                    subject, gradeLevel, quarter);
+
+            // Create and save the activity log
+            ActivityLog log = new ActivityLog(
+                    userId,
+                    user.getIdNumber(),
+                    formatUserName(user),
+                    user.getRole(),
+                    "LIBRARY_HOURS_UPDATED",
+                    description,
+                    DEFAULT_ACADEMIC_YEAR);
+
+            activityLogRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("Error logging library hours update: " + e.getMessage());
+        }
     }
 
     /**

@@ -26,6 +26,10 @@ public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long
         // Add this method to find all records with null timeOut
         List<LibraryHours> findByTimeOutIsNull();
 
+        // Add this method to fix the error - find all library hours with requirementId
+        // not null
+        List<LibraryHours> findByRequirementIdIsNotNull();
+
         // Find library hours associated with a specific requirement
         List<LibraryHours> findByIdNumberAndRequirementId(String idNumber, Long requirementId);
 
@@ -67,5 +71,4 @@ public interface LibraryHoursRepository extends JpaRepository<LibraryHours, Long
                         LocalDateTime endTime);
 
         List<LibraryHours> findByIdNumberAndRequiresBookAssignmentTrue(String idNumber);
-
 }

@@ -17,8 +17,8 @@ public class TimeInService {
     private static final ZoneId PHILIPPINES_ZONE = ZoneId.of("Asia/Manila");
 
     // Hardcoded library hours
-    private static final int OPENING_HOUR = 8; // 8:00 AM
-    private static final int CLOSING_HOUR = 17; // 5:00 PM
+    private static final int OPENING_HOUR = 0; // 8:00 AM
+    private static final int CLOSING_HOUR = 23; // 5:00 PM
 
     @Autowired
     private LibraryHoursRepository libraryHoursRepository;
