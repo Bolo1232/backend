@@ -34,9 +34,13 @@ public class SetLibraryHours {
 
     private LocalDate deadline;
 
-    // Approval status field
+    // Add task field for storing reading task description
+    @Column(length = 1000)
+    private String task;
+
+    // Status field - defaults to APPROVED now
     @Column(nullable = false)
-    private String approvalStatus = "PENDING"; // PENDING, APPROVED, REJECTED
+    private String approvalStatus = "APPROVED"; // No longer PENDING by default
 
     // Fields to handle date input
     @Transient
@@ -48,12 +52,9 @@ public class SetLibraryHours {
     @Transient
     private Integer year;
 
-    // Fields for tracking creator and rejection reasons
+    // Fields for tracking creator
     @Column
     private Long createdById;
-
-    @Column(length = 500)
-    private String rejectionReason;
 
     // Add created_at column to track when requirement was created
     @Column(name = "created_at")
@@ -101,6 +102,15 @@ public class SetLibraryHours {
         this.createdAt = createdAt;
     }
 
+    // Getter and setter for task
+    public String getTask() {
+        return task;
+    }
+
+    public void setTask(String task) {
+        this.task = task;
+    }
+
     // Getters
     public Long getId() {
         return id;
@@ -144,10 +154,6 @@ public class SetLibraryHours {
 
     public Long getCreatedById() {
         return createdById;
-    }
-
-    public String getRejectionReason() {
-        return rejectionReason;
     }
 
     // Setters
@@ -199,10 +205,6 @@ public class SetLibraryHours {
         this.createdById = createdById;
     }
 
-    public void setRejectionReason(String rejectionReason) {
-        this.rejectionReason = rejectionReason;
-    }
-
     // Method to construct deadline from month, day, year
     @PrePersist
     @PreUpdate
@@ -221,9 +223,9 @@ public class SetLibraryHours {
                 ", subject='" + subject + '\'' +
                 ", quarter=" + quarter.getValue() +
                 ", deadline=" + deadline +
+                ", task='" + (task != null ? task : "none") + '\'' +
                 ", approvalStatus='" + approvalStatus + '\'' +
                 ", createdById=" + createdById +
-                ", rejectionReason='" + (rejectionReason != null ? rejectionReason : "none") + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
     }
