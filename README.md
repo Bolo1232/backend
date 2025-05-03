@@ -4,9 +4,9 @@
 o Install MySQL Workbench.
 o Configure the database with the following credentials:
 ▪ Hostname: 127.0.0.1 or localhost
-▪ Port: 3306
-▪ Username: root
-▪ Password: root o Create a new schema named wildtrack_db.
+▪ Port: 12424
+▪ Username: avnadmin
+▪ Password: AVNS_IjOLjLPKx_QsI-P4RrZ o Create a new schema named wildtrack_db.
 
 # 2. Locate the Spring Boot App:
 o Navigate to the Spring Boot project folder. For example:
